@@ -1,0 +1,31 @@
+# ===== GLOBAL =====
+node_modules
+.env
+.env.*
+*.local
+
+# Logs
+logs
+*.log
+
+# OS
+.DS_Store
+
+# Build
+dist
+build
+coverage
+
+# ===== CLIENT =====
+client/node_modules
+client/dist
+client/dist-ssr
+client/.env
+
+# ===== SERVER =====
+server/node_modules
+server/.env
+
+# IDE
+.vscode
+.idea
