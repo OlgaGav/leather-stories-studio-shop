@@ -64,7 +64,7 @@ const Navbar = () => {
             className="h-10 w-10 mr-2"
           />
           Leather Stories{" "}
-          <span className="font-script text-gold-accent text-3xl md:text-2xl leading-none ml-1">
+          <span className="font-script text-gold-accent text-2xl md:text-2xl leading-none ml-1">
             Studio
           </span>
         </Link>

@@ -21,10 +21,12 @@ client/node_modules
 client/dist
 client/dist-ssr
 client/.env
+client/pnpm-lock.yaml
 
 # ===== SERVER =====
 server/node_modules
 server/.env
+server/pnpm-lock.yaml
 
 # IDE
 .vscode

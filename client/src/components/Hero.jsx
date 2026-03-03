@@ -19,10 +19,10 @@ export default function Hero() {
           Handmade in California
         </p>
 
-        <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl leading-tight text-primary-foreground mb-6">
+        <h1 className="font-script text-4xl md:text-6xl lg:text-7xl leading-tight text-primary-foreground mb-6">
           Leather Stories
           <br />
-          <span className="italic font-normal text-gold-accent">Studio</span>
+          <span className="font-script text-gold-accent ">Studio</span>
         </h1>
 
         <p className="text-primary-foreground/80 text-base md:text-lg max-w-md mx-auto mb-10">

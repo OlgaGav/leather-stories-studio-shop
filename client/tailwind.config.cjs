@@ -20,7 +20,7 @@ module.exports = {
       fontFamily: {
         display: ['"Playfair Display"', "Georgia", "serif"],
         body: ['"DM Sans"', "system-ui", "sans-serif"],
-        script: ['"Luxurious Script"', "cursive"],
+        script: ['Felipa', "cursive"],
       },
       colors: {
         border: "hsl(var(--border))",
