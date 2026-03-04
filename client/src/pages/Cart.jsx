@@ -1,91 +1,85 @@
+import { useMemo, useState } from "react";
 import { useCart } from "../context/CartContext";
 
 function formatMoney(amount, currency = "USD") {
   const symbol = currency === "EUR" ? "€" : currency === "USD" ? "$" : `${currency} `;
-  return `${symbol}${amount.toFixed(2)}`;
+  return `${symbol}${Number(amount || 0).toFixed(2)}`;
+}
+
+function isValidEmail(email) {
+  // simple practical validation
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
+}
+
+function getFallbackImage(productId) {
+  // If you have local images, you can map productId -> path here
+  // Example:
+  // const map = { "cardholder-model-1": "/images/cardholder-1.jpg" };
+  // return map[productId] || "/images/placeholder.jpg";
+
+  return "/images/placeholder.jpg"; // make sure this exists in /public/images/placeholder.jpg
 }
 
 export default function Cart() {
   const { items, updateQuantity, removeFromCart, clearCart, total } = useCart();
-console.log("API:", import.meta.env.VITE_API_URL);
+
+  const [email, setEmail] = useState("");
+  const [touchedEmail, setTouchedEmail] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const emailOk = useMemo(() => isValidEmail(email), [email]);
+  const canCheckout = items.length > 0 && emailOk && !submitting;
+
   async function handleCheckout() {
-  if (!items.length) return;
+    if (!items.length) return;
 
-  try {
-    const payload = {
-      items: items.map((i) => ({
-        productId: i.productId,
-        name: i.name,
-        price: Number(i.price),                
-        currency: (i.currency || "USD").toUpperCase(),
-        colorId: i.colorId,
-        leatherId: i.leatherId || "",
-        personalization: i.personalization || null,
-        quantity: parseInt(i.quantity, 10) || 1, 
-      })),
-      // customerEmail: user.email (if you have it)
-    };
+    setTouchedEmail(true);
+    if (!emailOk) return;
 
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/checkout/create-session`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    setSubmitting(true);
+    try {
+      const payload = {
+        items: items.map((i) => ({
+          productId: i.productId,
+          name: i.name,
+          price: Number(i.price),
+          currency: (i.currency || "USD").toUpperCase(),
+          colorId: i.colorId,
+          leatherId: i.leatherId || "",
+          personalization: i.personalization || null,
+          quantity: parseInt(i.quantity, 10) || 1,
+          // Optional: pass image to server only if you want it in metadata
+          // imageUrl: i.imageUrl || null,
+        })),
+        customerEmail: email.trim(),
+      };
 
-    const data = await res.json().catch(() => ({}));
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/checkout/create-session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-    if (!res.ok) {
-      console.error("Checkout API error:", res.status, data);
-      alert(data?.error ? `Checkout failed: ${data.error}` : `Checkout failed (${res.status})`);
-      return;
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        console.error("Checkout API error:", res.status, data);
+        alert(data?.error ? `Checkout failed: ${data.error}` : `Checkout failed (${res.status})`);
+        return;
+      }
+
+      if (data.url) {
+        window.location.assign(data.url);
+      } else {
+        alert("Checkout failed: no URL returned");
+      }
+    } catch (e) {
+      console.error(e);
+      alert(e?.message || "Checkout failed");
+    } finally {
+      setSubmitting(false);
     }
-
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
-      alert("Checkout failed: no URL returned");
-    }
-  } catch (e) {
-    console.error(e);
-    alert(e?.message || "Checkout failed");
   }
-}
-  // async function handleCheckout() {
-  //   if (!items.length) return;
-
-  //   const res = await fetch(
-  //     `${import.meta.env.VITE_API_URL}/api/checkout/create-session`,
-  //     {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify({
-  //         items: items.map((i) => ({
-  //           productId: i.productId,
-  //           name: i.name,
-  //           price: i.price,
-  //           currency: i.currency || "USD",
-  //           colorId: i.colorId,
-  //           leatherId: i.leatherId || "",
-  //           personalization: i.personalization || null,
-  //           quantity: i.quantity,
-  //         })),
-  //       }),
-  //     },
-  //   );
-
-  //   const data = await res.json();
-
-  //   if (!res.ok) {
-  //     alert(data?.error || "Checkout failed");
-  //     return;
-  //   }
-
-  //   if (data.url) {
-  //     window.location.href = data.url;
-  //   } else {
-  //     alert("Checkout failed: no URL returned");
-  //   }
-  // }
 
   return (
     <div className="w-full bg-background text-foreground">
@@ -120,97 +114,135 @@ console.log("API:", import.meta.env.VITE_API_URL);
           </div>
         ) : (
           <>
+            {/* Email (required) */}
+            <div className="mt-10 rounded-3xl border border-border bg-card p-6 shadow-lg">
+              <div className="font-display text-xl">Contact email</div>
+              <p className="mt-2 text-lg text-muted-foreground">
+                We’ll send your order confirmation here. This email will be pre-filled on Stripe Checkout.
+              </p>
+
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-foreground">
+                  Email <span className="text-destructive">*</span>
+                </label>
+
+                <input
+                  className={`mt-2 w-full rounded-2xl border bg-background px-4 py-3 text-lg outline-none transition ${
+                    touchedEmail && !emailOk ? "border-destructive" : "border-border focus:border-accent"
+                  }`}
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onBlur={() => setTouchedEmail(true)}
+                  required
+                />
+
+                {touchedEmail && !emailOk ? (
+                  <div className="mt-2 text-sm text-destructive">
+                    Please enter a valid email address.
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
             <div className="mt-10 space-y-4">
-              {items.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex flex-col gap-4 rounded-3xl border border-border bg-card p-6 shadow-lg md:flex-row md:items-center md:justify-between"
-                >
-                  {/* Left: details */}
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <div className="font-medium text-foreground">
-                        {item.name}
-                      </div>
-                      <div className="text-lg text-muted-foreground">
-                        {formatMoney(item.price, item.currency)}
-                        <span className="text-muted-foreground/70"> / ea</span>
-                      </div>
-                    </div>
+              {items.map((item) => {
+                const imageSrc = item.imageUrl || getFallbackImage(item.productId);
 
-                    <div className="mt-3 space-y-1 text-lg text-muted-foreground">
-                      <div>
-                        Color:{" "}
-                        <span className="text-foreground">{item.colorId}</span>
+                return (
+                  <div
+                    key={item.id}
+                    className="flex flex-col gap-4 rounded-3xl border border-border bg-card p-6 shadow-lg md:flex-row md:items-center md:justify-between"
+                  >
+                    {/* Left: image + details */}
+                    <div className="flex gap-5 min-w-0">
+                      {/* Image */}
+                      <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-border bg-background/40">
+                        <img
+                          src={imageSrc}
+                          alt={item.name}
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.src = getFallbackImage(item.productId);
+                          }}
+                        />
                       </div>
 
-                      {item.leatherId ? (
-                        <div>
-                          Leather:{" "}
-                          <span className="text-foreground">{item.leatherId}</span>
+                      {/* Details */}
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <div className="font-medium text-foreground">{item.name}</div>
+                          <div className="text-lg text-muted-foreground">
+                            {formatMoney(item.price, item.currency)}
+                            <span className="text-muted-foreground/70"> / ea</span>
+                          </div>
                         </div>
-                      ) : null}
 
-                      {item.personalization?.text ? (
-                        <div>
-                          Personalization:{" "}
-                          <span className="text-foreground">
-                            “{item.personalization.text}”
-                          </span>
-                          {item.personalization.fontId ? (
-                            <span className="text-muted-foreground">
-                              {" "}
-                              ({item.personalization.fontId})
-                            </span>
+                        <div className="mt-3 space-y-1 text-lg text-muted-foreground">
+                          <div>
+                            Color: <span className="text-foreground">{item.colorId}</span>
+                          </div>
+
+                          {item.leatherId ? (
+                            <div>
+                              Leather: <span className="text-foreground">{item.leatherId}</span>
+                            </div>
+                          ) : null}
+
+                          {item.personalization?.text ? (
+                            <div>
+                              Personalization:{" "}
+                              <span className="text-foreground">“{item.personalization.text}”</span>
+                              {item.personalization.fontId ? (
+                                <span className="text-muted-foreground"> ({item.personalization.fontId})</span>
+                              ) : null}
+                            </div>
                           ) : null}
                         </div>
-                      ) : null}
+
+                        <button
+                          className="mt-4 inline-flex text-lg text-destructive hover:underline"
+                          onClick={() => removeFromCart(item.id)}
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </div>
 
-                    <button
-                      className="mt-4 inline-flex text-lg text-destructive hover:underline"
-                      onClick={() => removeFromCart(item.id)}
-                    >
-                      Remove
-                    </button>
-                  </div>
+                    {/* Right: quantity + subtotal */}
+                    <div className="flex items-center justify-between gap-6 md:justify-end">
+                      <div className="flex items-center gap-2">
+                        <button
+                          className="h-10 w-10 rounded-full border border-border bg-background text-lg hover:bg-muted transition"
+                          onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                          aria-label="Decrease quantity"
+                        >
+                          −
+                        </button>
 
-                  {/* Right: quantity + subtotal */}
-                  <div className="flex items-center justify-between gap-6 md:justify-end">
-                    {/* Quantity */}
-                    <div className="flex items-center gap-2">
-                      <button
-                        className="h-10 w-10 rounded-full border border-border bg-background text-lg hover:bg-muted transition"
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                        aria-label="Decrease quantity"
-                      >
-                        −
-                      </button>
+                        <div className="w-10 text-center text-lg font-medium">{item.quantity}</div>
 
-                      <div className="w-10 text-center text-lg font-medium">
-                        {item.quantity}
+                        <button
+                          className="h-10 w-10 rounded-full border border-border bg-background text-lg hover:bg-muted transition"
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          aria-label="Increase quantity"
+                        >
+                          +
+                        </button>
                       </div>
 
-                      <button
-                        className="h-10 w-10 rounded-full border border-border bg-background text-lg hover:bg-muted transition"
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        aria-label="Increase quantity"
-                      >
-                        +
-                      </button>
-                    </div>
-
-                    <div className="text-right">
-                      <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                        Subtotal
-                      </div>
-                      <div className="font-semibold text-foreground">
-                        {formatMoney(item.price * item.quantity, item.currency)}
+                      <div className="text-right">
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground">Subtotal</div>
+                        <div className="font-semibold text-foreground">
+                          {formatMoney(Number(item.price) * Number(item.quantity), item.currency)}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Total + Checkout */}
@@ -218,20 +250,27 @@ console.log("API:", import.meta.env.VITE_API_URL);
               <div className="flex items-center justify-between">
                 <div className="font-display text-xl">Total</div>
                 <div className="font-display text-xl text-accent">
-                  {formatMoney(total, items[0]?.currency || "EUR")}
+                  {formatMoney(total, items[0]?.currency || "USD")}
                 </div>
               </div>
 
               <button
-                className="mt-6 w-full rounded-full bg-accent px-6 py-3 text-lg font-medium tracking-wide text-accent-foreground shadow-lg hover:opacity-90 transition"
+                className="mt-6 w-full rounded-full bg-accent px-6 py-3 text-lg font-medium tracking-wide text-accent-foreground shadow-lg hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleCheckout}
+                disabled={!canCheckout}
               >
-                Checkout
+                {submitting ? "Redirecting…" : "Checkout"}
               </button>
 
               <p className="mt-3 text-lg text-muted-foreground">
                 You’ll complete payment securely on Stripe.
               </p>
+
+              {!emailOk && touchedEmail ? (
+                <p className="mt-2 text-sm text-destructive">
+                  Email is required to proceed to checkout.
+                </p>
+              ) : null}
             </div>
           </>
         )}

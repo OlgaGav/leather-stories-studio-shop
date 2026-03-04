@@ -1,11 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-
-function formatMoneyFromCents(amountCents, currency = "EUR") {
-  const amount = (amountCents || 0) / 100;
-  const symbol = currency === "EUR" ? "€" : currency === "USD" ? "$" : `${currency} `;
-  return `${symbol}${amount.toFixed(2)}`;
-}
+import { formatMoneyFromCents } from "../utils/productVariant";
+import { useCart } from "../context/CartContext";
 
 const Success = () => {
   const [searchParams] = useSearchParams();
@@ -14,28 +10,83 @@ const Success = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const { clearCart } = useCart();
+  const didClearRef = useRef(false);
+
+  function shouldClearForSession(sessionId) {
+    try {
+      const key = "leather_cart_last_cleared_session";
+      return localStorage.getItem(key) !== sessionId;
+    } catch {
+      return true;
+    }
+  }
+
+  function markCleared(sessionId) {
+    try {
+      localStorage.setItem("leather_cart_last_cleared_session", sessionId);
+    } catch {}
+  }
+
   useEffect(() => {
     if (!sessionId) {
       setLoading(false);
       return;
     }
 
-    fetch(`${import.meta.env.VITE_API_URL}/api/order/session/${sessionId}`)
-      .then(async (res) => {
-        const data = await res.json().catch(() => null);
-        if (!res.ok) throw new Error(data?.error || "Failed to load order");
-        return data;
-      })
-      .then((data) => {
-        setOrder(data);
+    let cancelled = false;
+    let attempts = 0;
+
+    const maxAttempts = 12; // 12 * 2s = 24s
+    const intervalMs = 2000;
+
+    async function load() {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/order/session/${sessionId}`,
+        );
+
+        const data = await res.json().catch(() => ({}));
+        if (cancelled) return;
+
+        if (res.ok) {
+          setOrder(data);
+          setLoading(false);
+          if (!didClearRef.current && shouldClearForSession(sessionId)) {
+            clearCart(); // clears state -> effect saves [] to STORAGE_KEY
+            markCleared(sessionId);
+            didClearRef.current = true;
+          }
+          return;
+        }
+
+        // Order not ready yet: keep waiting (webhook delay)
+        if (
+          (res.status === 202 || res.status === 409) &&
+          attempts < maxAttempts
+        ) {
+          attempts += 1;
+          setTimeout(load, intervalMs);
+          return;
+        }
+
+        // Stop polling on other errors or timeout
         setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [sessionId]);
+      } catch {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId, clearCart]);
 
   const totalText = useMemo(() => {
     if (!order) return "";
-    return formatMoneyFromCents(order.amountTotal, order.currency || "EUR");
+    return formatMoneyFromCents(order.amountTotal, order.currency || "USD");
   }, [order]);
 
   // Shared layout wrappers (theme)
@@ -120,7 +171,8 @@ const Success = () => {
               Something went wrong
             </h1>
             <p className="mt-2 font-body text-sm text-muted-foreground">
-              We couldn’t load your order yet. If you just paid, refresh in a moment.
+              We couldn’t load your order yet. If you just paid, refresh in a
+              moment.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -140,7 +192,7 @@ const Success = () => {
 
   return (
     <Page>
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-3xl pt-6">
         <Card>
           <p className="text-[11px] tracking-[0.22em] uppercase text-gold-accent">
             Order confirmed
@@ -186,8 +238,11 @@ const Success = () => {
                       <span className="text-foreground">{item.colorId}</span>
                       {item.leatherId ? (
                         <>
-                          {" "}• Leather:{" "}
-                          <span className="text-foreground">{item.leatherId}</span>
+                          {" "}
+                          • Leather:{" "}
+                          <span className="text-foreground">
+                            {item.leatherId}
+                          </span>
                         </>
                       ) : null}
                     </div>
@@ -200,7 +255,8 @@ const Success = () => {
                         </span>
                         {item.personalizationFont ? (
                           <span className="text-muted-foreground">
-                            {" "}({item.personalizationFont})
+                            {" "}
+                            ({item.personalizationFont})
                           </span>
                         ) : null}
                       </div>
@@ -218,8 +274,8 @@ const Success = () => {
                       {item.currency === "USD"
                         ? "$"
                         : item.currency === "EUR"
-                        ? "€"
-                        : `${item.currency} `}
+                          ? "€"
+                          : `${item.currency} `}
                       {Number(item.price).toFixed(2)}
                     </div>
                   </div>
