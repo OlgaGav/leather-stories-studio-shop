@@ -5,13 +5,26 @@ import crypto from "crypto";
 const router = express.Router();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+function normalizeItem(raw) {
+  const price = Number(raw?.price);
+  const quantity = Number(raw?.quantity);
+
+  return {
+    ...raw,
+    price,
+    quantity: Number.isInteger(quantity) ? quantity : Math.floor(quantity),
+    currency: (raw?.currency || "USD").toUpperCase(),
+  };
+}
 function validateItem(item) {
   if (!item?.productId) return "Missing productId";
   if (!item?.name) return "Missing name";
   if (!Number.isFinite(item?.price) || item.price <= 0) return "Invalid price";
+  if (!item?.leatherId && !item?.colorId)
+    return "Missing colorId and leatherId"; // at least one should be present
   if (!item?.currency) return "Missing currency";
-  if (!item?.colorId) return "Missing colorId";
-  if (!Number.isInteger(item?.quantity) || item.quantity < 1) return "Invalid quantity";
+  if (!Number.isInteger(item?.quantity) || item.quantity < 1)
+    return "Invalid quantity";
   return null;
 }
 
@@ -27,7 +40,9 @@ router.post("/create-session", async (req, res) => {
       return res.status(400).json({ error: "Cart is empty" });
     }
 
-    for (const it of items) {
+    const normalizedItems = items.map(normalizeItem);
+
+    for (const it of normalizedItems) {
       const err = validateItem(it);
       if (err) return res.status(400).json({ error: err, item: it });
     }
@@ -35,17 +50,19 @@ router.post("/create-session", async (req, res) => {
     // Create your own order reference (useful for webhook/admin later)
     const orderRef = crypto.randomUUID();
 
-    const line_items = items.map((item) => ({
+    const line_items = normalizedItems.map((item) => ({
       quantity: item.quantity,
       price_data: {
-        currency: item.currency.toLowerCase(), // "EUR" -> "eur"
+        currency: item.currency.toLowerCase(), // "USD" -> "usd"
         unit_amount: Math.round(item.price * 100),
         product_data: {
           name: item.name,
           description: [
             `Color: ${item.colorId}`,
             item.leatherId ? `Leather: ${item.leatherId}` : null,
-            item.personalization?.text ? `Personalization: ${item.personalization.text}` : null,
+            item.personalization?.text
+              ? `Personalization: ${item.personalization.text}`
+              : null,
           ]
             .filter(Boolean)
             .join(" | "),

@@ -25,11 +25,21 @@ if (!process.env.STRIPE_WEBHOOK_SECRET) {
 }
 
 // CORS
-app.use(
-  cors({
-    origin: process.env.CLIENT_URL || true,
-  })
-);
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  // add production frontend origin here, e.g. "https://yourshop.com"
+];
+
+app.use(cors({
+  origin: (origin, cb) => {
+    // allow curl/postman (no origin) and allowed browser origins
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    return cb(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "Stripe-Signature"],
+}));
 
 // Stripe webhook (must be before express.json)
 createWebhookRoute(app);

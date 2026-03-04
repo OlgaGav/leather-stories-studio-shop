@@ -1,40 +1,42 @@
 import { useCart } from "../context/CartContext";
 
-function formatMoney(amount, currency = "EUR") {
+function formatMoney(amount, currency = "USD") {
   const symbol = currency === "EUR" ? "€" : currency === "USD" ? "$" : `${currency} `;
   return `${symbol}${amount.toFixed(2)}`;
 }
 
 export default function Cart() {
   const { items, updateQuantity, removeFromCart, clearCart, total } = useCart();
-
+console.log("API:", import.meta.env.VITE_API_URL);
   async function handleCheckout() {
-    if (!items.length) return;
+  if (!items.length) return;
 
-    const res = await fetch(
-      `${import.meta.env.VITE_API_URL}/api/checkout/create-session`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: items.map((i) => ({
-            productId: i.productId,
-            name: i.name,
-            price: i.price,
-            currency: i.currency || "EUR",
-            colorId: i.colorId,
-            leatherId: i.leatherId || "",
-            personalization: i.personalization || null,
-            quantity: i.quantity,
-          })),
-        }),
-      },
-    );
+  try {
+    const payload = {
+      items: items.map((i) => ({
+        productId: i.productId,
+        name: i.name,
+        price: Number(i.price),                
+        currency: (i.currency || "USD").toUpperCase(),
+        colorId: i.colorId,
+        leatherId: i.leatherId || "",
+        personalization: i.personalization || null,
+        quantity: parseInt(i.quantity, 10) || 1, 
+      })),
+      // customerEmail: user.email (if you have it)
+    };
 
-    const data = await res.json();
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/checkout/create-session`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json().catch(() => ({}));
 
     if (!res.ok) {
-      alert(data?.error || "Checkout failed");
+      console.error("Checkout API error:", res.status, data);
+      alert(data?.error ? `Checkout failed: ${data.error}` : `Checkout failed (${res.status})`);
       return;
     }
 
@@ -43,7 +45,47 @@ export default function Cart() {
     } else {
       alert("Checkout failed: no URL returned");
     }
+  } catch (e) {
+    console.error(e);
+    alert(e?.message || "Checkout failed");
   }
+}
+  // async function handleCheckout() {
+  //   if (!items.length) return;
+
+  //   const res = await fetch(
+  //     `${import.meta.env.VITE_API_URL}/api/checkout/create-session`,
+  //     {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({
+  //         items: items.map((i) => ({
+  //           productId: i.productId,
+  //           name: i.name,
+  //           price: i.price,
+  //           currency: i.currency || "USD",
+  //           colorId: i.colorId,
+  //           leatherId: i.leatherId || "",
+  //           personalization: i.personalization || null,
+  //           quantity: i.quantity,
+  //         })),
+  //       }),
+  //     },
+  //   );
+
+  //   const data = await res.json();
+
+  //   if (!res.ok) {
+  //     alert(data?.error || "Checkout failed");
+  //     return;
+  //   }
+
+  //   if (data.url) {
+  //     window.location.href = data.url;
+  //   } else {
+  //     alert("Checkout failed: no URL returned");
+  //   }
+  // }
 
   return (
     <div className="w-full bg-background text-foreground">
