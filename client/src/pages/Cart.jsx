@@ -1,23 +1,36 @@
 import { useMemo, useState } from "react";
 import { useCart } from "../context/CartContext";
+import { getColorName, getLeatherName } from "../utils/catalog";
+import { getVariantImages } from "../utils/productImages";
+import { productById } from "../utils/catalog";
 
 function formatMoney(amount, currency = "USD") {
-  const symbol = currency === "EUR" ? "€" : currency === "USD" ? "$" : `${currency} `;
+  const symbol =
+    currency === "EUR" ? "€" : currency === "USD" ? "$" : `${currency} `;
   return `${symbol}${Number(amount || 0).toFixed(2)}`;
 }
 
 function isValidEmail(email) {
-  // simple practical validation
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
 }
 
 function getFallbackImage(productId) {
-  // If you have local images, you can map productId -> path here
-  // Example:
-  // const map = { "cardholder-model-1": "/images/cardholder-1.jpg" };
-  // return map[productId] || "/images/placeholder.jpg";
+  let image = "/images/placeholder.jpg"; // default placeholder
 
-  return "/images/placeholder.jpg"; // make sure this exists in /public/images/placeholder.jpg
+  // Try to find product-specific fallback
+  try {
+    const skuImages = getVariantImages(productById[productId], {});
+    if (skuImages?.length) {
+      image = skuImages[0];
+    }
+  } catch (e) {
+    console.log("Error getting fallback image for product", {
+      productId,
+      error: e,
+    });
+  }
+
+  return image;
 }
 
 export default function Cart() {
@@ -48,23 +61,28 @@ export default function Cart() {
           leatherId: i.leatherId || "",
           personalization: i.personalization || null,
           quantity: parseInt(i.quantity, 10) || 1,
-          // Optional: pass image to server only if you want it in metadata
-          // imageUrl: i.imageUrl || null,
         })),
         customerEmail: email.trim(),
       };
 
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/checkout/create-session`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/checkout/create-session`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+      );
 
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
         console.error("Checkout API error:", res.status, data);
-        alert(data?.error ? `Checkout failed: ${data.error}` : `Checkout failed (${res.status})`);
+        alert(
+          data?.error
+            ? `Checkout failed: ${data.error}`
+            : `Checkout failed (${res.status})`,
+        );
         return;
       }
 
@@ -118,7 +136,8 @@ export default function Cart() {
             <div className="mt-10 rounded-3xl border border-border bg-card p-6 shadow-lg">
               <div className="font-display text-xl">Contact email</div>
               <p className="mt-2 text-lg text-muted-foreground">
-                We’ll send your order confirmation here. This email will be pre-filled on Stripe Checkout.
+                We’ll send your order confirmation here. This email will be
+                pre-filled on Stripe Checkout.
               </p>
 
               <div className="mt-4">
@@ -128,7 +147,9 @@ export default function Cart() {
 
                 <input
                   className={`mt-2 w-full rounded-2xl border bg-background px-4 py-3 text-lg outline-none transition ${
-                    touchedEmail && !emailOk ? "border-destructive" : "border-border focus:border-accent"
+                    touchedEmail && !emailOk
+                      ? "border-destructive"
+                      : "border-border focus:border-accent"
                   }`}
                   type="email"
                   placeholder="you@example.com"
@@ -148,8 +169,12 @@ export default function Cart() {
 
             <div className="mt-10 space-y-4">
               {items.map((item) => {
-                const imageSrc = item.imageUrl || getFallbackImage(item.productId);
-
+                const imageSrc =
+                  item.imageUrl ||
+                  getFallbackImage(item.productId, {
+                    colorId: item.colorId,
+                    leatherId: item.leatherId,
+                  });
                 return (
                   <div
                     key={item.id}
@@ -165,7 +190,13 @@ export default function Cart() {
                           className="h-full w-full object-cover"
                           loading="lazy"
                           onError={(e) => {
-                            e.currentTarget.src = getFallbackImage(item.productId);
+                            e.currentTarget.src = getFallbackImage(
+                              item.productId,
+                              {
+                                colorId: item.colorId,
+                                leatherId: item.leatherId,
+                              },
+                            );
                           }}
                         />
                       </div>
@@ -173,30 +204,46 @@ export default function Cart() {
                       {/* Details */}
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                          <div className="font-medium text-foreground">{item.name}</div>
+                          <div className="font-medium text-foreground">
+                            {item.name}
+                          </div>
                           <div className="text-lg text-muted-foreground">
                             {formatMoney(item.price, item.currency)}
-                            <span className="text-muted-foreground/70"> / ea</span>
+                            <span className="text-muted-foreground/70">
+                              {" "}
+                              / ea
+                            </span>
                           </div>
                         </div>
 
                         <div className="mt-3 space-y-1 text-lg text-muted-foreground">
                           <div>
-                            Color: <span className="text-foreground">{item.colorId}</span>
+                            Color:{" "}
+                            <span className="text-foreground">
+                              {getColorName(item.productId, item.colorId)}
+                            </span>
                           </div>
 
                           {item.leatherId ? (
                             <div>
-                              Leather: <span className="text-foreground">{item.leatherId}</span>
+                              Leather:{" "}
+                              <span className="text-foreground">
+                                {getLeatherName(item.productId, item.leatherId)}
+                              </span>
                             </div>
                           ) : null}
 
                           {item.personalization?.text ? (
                             <div>
                               Personalization:{" "}
-                              <span className="text-foreground">“{item.personalization.text}”</span>
+                              <span className="text-foreground">
+                                “{item.personalization.text}”
+                              </span>
                               {item.personalization.fontId ? (
-                                <span className="text-muted-foreground"> ({item.personalization.fontId})</span>
+                                <span className="text-muted-foreground">
+                                  {" "}
+                                  ({item.personalization.fontId})
+                                </span>
                               ) : null}
                             </div>
                           ) : null}
@@ -216,17 +263,26 @@ export default function Cart() {
                       <div className="flex items-center gap-2">
                         <button
                           className="h-10 w-10 rounded-full border border-border bg-background text-lg hover:bg-muted transition"
-                          onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                          onClick={() =>
+                            updateQuantity(
+                              item.id,
+                              Math.max(1, item.quantity - 1),
+                            )
+                          }
                           aria-label="Decrease quantity"
                         >
                           −
                         </button>
 
-                        <div className="w-10 text-center text-lg font-medium">{item.quantity}</div>
+                        <div className="w-10 text-center text-lg font-medium">
+                          {item.quantity}
+                        </div>
 
                         <button
                           className="h-10 w-10 rounded-full border border-border bg-background text-lg hover:bg-muted transition"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          onClick={() =>
+                            updateQuantity(item.id, item.quantity + 1)
+                          }
                           aria-label="Increase quantity"
                         >
                           +
@@ -234,9 +290,14 @@ export default function Cart() {
                       </div>
 
                       <div className="text-right">
-                        <div className="text-xs uppercase tracking-wide text-muted-foreground">Subtotal</div>
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                          Subtotal
+                        </div>
                         <div className="font-semibold text-foreground">
-                          {formatMoney(Number(item.price) * Number(item.quantity), item.currency)}
+                          {formatMoney(
+                            Number(item.price) * Number(item.quantity),
+                            item.currency,
+                          )}
                         </div>
                       </div>
                     </div>
