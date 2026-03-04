@@ -25,22 +25,39 @@ export const products = [
         colorId: "dark-brown",
         leatherId: "smooth",
         images: [
-          "/images/cardholder/db-smooth-1.jpg",
-          "/images/cardholder/db-smooth-2.jpg",
+          "/images/cardholder/wallet_1.jpg",
+        ],
+      },
+      {
+        colorId: "dark-brown",
+        leatherId: "pebbled",
+        images: [
+          "/images/cardholder/wallet_1_2.jpg",
         ],
       },
       {
         colorId: "tan",
+        leatherId: "smooth",
+        images: [
+          "/images/cardholder/wallet_1_2.jpg",
+        ],
+      },
+       {
+        colorId: "tan",
         leatherId: "pebbled",
         images: [
-          "/images/cardholder/db-pebbled-1.jpg",
-          "/images/cardholder/db-pebbled-2.jpg",
+          "/images/cardholder/wallet_1.jpg",
         ],
       },
       {
         colorId: "black",
         leatherId: "smooth",
-        images: ["/images/cardholder/black-smooth-1.jpg"],
+        images: ["/images/cardholder/wallet_4.jpg"],
+      },
+      {
+        colorId: "black",
+        leatherId: "pebbled",
+        images: ["/images/cardholder/wallet_5.jpg"],
       },
     ],
     fonts: [
@@ -58,7 +75,6 @@ export const products = [
     description: "Compact card holder designed for everyday carry.",
 
     colors: [
-      { id: "dark-brown", name: "Dark Brown", hex: "#5a3a1b" },
       { id: "tan", name: "Tan", hex: "#b37a3c" },
       { id: "black", name: "Black", hex: "#111111" },
     ],
@@ -71,16 +87,31 @@ export const products = [
     variants: [
       {
         colorId: "black",
+        leatherId: "smooth",
         images: [
           "/images/cardholder/wallet_3.jpg",
           "/images/cardholder/wallet_3_1.jpg",
         ],
       },
       {
+        colorId: "black",
+        leatherId: "pebbled",
+        images: [
+          "/images/cardholder/wallet_3_1.jpg",
+        ],
+      },
+      {
         colorId: "tan",
+        leatherId: "smooth",
         images: [
           "/images/cardholder/wallet_4.jpg",
-          "/images/cardholder/wallet_5.jpg",
+        ],
+      },
+      {
+        colorId: "tan",
+        leatherId: "pebbled",
+        images: [
+          "/images/cardholder/wallet_5.jpg"
         ],
       },
     ],
