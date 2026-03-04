@@ -1,0 +1,21 @@
+# /opt/leather-shop/prod/docker-compose.yml
+
+services:
+  mongo:
+    image: mongo:7
+    restart: always
+    volumes:
+      - mongo_prod:/data/db
+
+  app:
+    image: ghcr.io/olgagav/leather-stories-studio-shop:prod
+    restart: always
+    env_file:
+      - ./.env.prod
+    depends_on:
+      - mongo
+    ports:
+      - "127.0.0.1:5000:5050"
+
+volumes:
+  mongo_prod:
