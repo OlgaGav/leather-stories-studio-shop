@@ -21,14 +21,15 @@ const stripeWebhook = (app) => {
     "/webhook",
     express.raw({ type: "application/json" }),
     async (req, res) => {
+      console.log("✅ Webhook hit"); // <--- added log for debugging
       const sig = req.headers["stripe-signature"];
-
+      console.log("Stripe-Signature header present:", Boolean(sig)); // <--- added log for debugging
       let event;
       try {
         event = stripe.webhooks.constructEvent(
           req.body,
           sig,
-          process.env.STRIPE_WEBHOOK_SECRET
+          process.env.STRIPE_WEBHOOK_SECRET,
         );
       } catch (err) {
         console.error("❌ Webhook signature verification failed:", err.message);
@@ -79,16 +80,21 @@ const stripeWebhook = (app) => {
 
           // Send emails (don't break webhook if email fails)
           sendEmail(order).catch((e) =>
-            console.error("❌ Email sending failed:", e.message)
+            console.error("❌ Email sending failed:", e.message),
           );
         } catch (err) {
-          console.error("❌ Failed processing checkout.session.completed:", err);
+          console.error(
+            "❌ Failed processing checkout.session.completed:",
+            err,
+          );
           // Still 200 so Stripe doesn't retry aggressively
+          console.error("❌ Order create failed:", err?.message);
+          console.error(err);
         }
       }
 
       res.json({ received: true });
-    }
+    },
   );
 };
 

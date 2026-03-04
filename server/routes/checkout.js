@@ -74,6 +74,7 @@ router.post("/create-session", async (req, res) => {
     // Stripe metadata has limits; keep only essentials.
     const compactItems = items.map((i) => ({
       productId: i.productId,
+      name: i.name,
       colorId: i.colorId,
       leatherId: i.leatherId || "",
       pText: i.personalization?.text || "",

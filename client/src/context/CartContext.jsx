@@ -35,7 +35,10 @@ export function CartProvider({ children }) {
 
       if (idx !== -1) {
         const copy = [...prev];
-        copy[idx] = { ...copy[idx], quantity: copy[idx].quantity + (newItem.quantity || 1) };
+        copy[idx] = {
+          ...copy[idx],
+          quantity: copy[idx].quantity + (newItem.quantity || 1),
+        };
         return copy;
       }
 
@@ -55,7 +58,7 @@ export function CartProvider({ children }) {
     setItems((prev) =>
       prev
         .map((i) => (i.id === id ? { ...i, quantity } : i))
-        .filter((i) => i.quantity > 0)
+        .filter((i) => i.quantity > 0),
     );
   }
 
@@ -65,6 +68,25 @@ export function CartProvider({ children }) {
 
   function clearCart() {
     setItems([]);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {}
+  }
+
+  const LAST_CLEARED_KEY = "leather_cart_last_cleared_session";
+
+  function markSessionCleared(sessionId) {
+    try {
+      localStorage.setItem(LAST_CLEARED_KEY, sessionId);
+    } catch {}
+  }
+
+  function wasSessionCleared(sessionId) {
+    try {
+      return localStorage.getItem(LAST_CLEARED_KEY) === sessionId;
+    } catch {
+      return false;
+    }
   }
 
   const total = useMemo(() => {
@@ -73,7 +95,14 @@ export function CartProvider({ children }) {
 
   return (
     <CartContext.Provider
-      value={{ items, addToCart, updateQuantity, removeFromCart, clearCart, total }}
+      value={{
+        items,
+        addToCart,
+        updateQuantity,
+        removeFromCart,
+        clearCart,
+        total,
+      }}
     >
       {children}
     </CartContext.Provider>
