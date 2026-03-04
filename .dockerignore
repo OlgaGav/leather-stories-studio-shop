@@ -1,0 +1,12 @@
+**/node_modules
+**/.pnpm-store
+**/dist
+**/build
+**/.cache
+**/.DS_Store
+.git
+.gitignore
+.env
+.env.*
+client/.env*
+server/.env*

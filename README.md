@@ -57,3 +57,10 @@ Frontend will be available at: http://localhost:5173
 npm run dev
 ```
 
+## Docker build
+
+For the development
+
+```
+docker compose -f docker.compose.dev.yaml up --build
+```
