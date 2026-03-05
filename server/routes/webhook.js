@@ -38,10 +38,16 @@ const stripeWebhook = (app) => {
 
       if (event.type === "checkout.session.completed") {
         const session = event.data.object;
-
+        console.log("EVENT:", event.type, "session.id:", session.id, "payment_status:", session.payment_status, "status:", session.status);
+        console.log("EVENT TYPE:", event.type);
+        console.log("session.id:", session.id);
+        console.log("payment_status:", session.payment_status);
+        console.log("customer_email:", session.customer_email);
+        const isPaid =
+          session.payment_status === "paid" || session.status === "complete";
         try {
           // Only treat it as paid
-          if (session.payment_status !== "paid") {
+          if (!isPaid) {
             return res.json({ received: true });
           }
 
@@ -69,14 +75,13 @@ const stripeWebhook = (app) => {
           const order = await Order.create({
             stripeSessionId: session.id, // ✅ used by Success page
             orderRef: session.metadata?.orderRef || "",
-
             items: orderItems,
-
             amountTotal: session.amount_total, // cents
             currency: (session.currency || "eur").toUpperCase(),
             customerEmail: session.customer_email,
             paymentStatus: "paid",
           });
+          console.log("✅ Order saved for session:", session.id);
 
           // Send emails (don't break webhook if email fails)
           sendEmail(order).catch((e) =>
