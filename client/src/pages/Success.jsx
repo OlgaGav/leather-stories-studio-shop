@@ -43,7 +43,7 @@ const Success = () => {
     async function load() {
       try {
         const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/order/session/${sessionId}`,
+          "/api/order/session/${sessionId}",
         );
 
         const data = await res.json().catch(() => ({}));

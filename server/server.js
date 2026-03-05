@@ -24,7 +24,7 @@ const app = express();
   }
 });
 
-// CORS 
+// CORS
 const allowedOrigins = new Set([
   "http://localhost:5173",
   "http://127.0.0.1:5173",
@@ -34,21 +34,18 @@ const allowedOrigins = new Set([
 
 const corsMiddleware = cors({
   origin: (origin, cb) => {
-    if (!origin) return cb(null, true);
+    if (!origin) return cb(null, true); // allow curl/postman
     if (allowedOrigins.has(origin)) return cb(null, true);
-    return cb(null, false);
+    return cb(null, false); // do not throw (prevents noisy 500s)
   },
   methods: ["GET", "POST", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "Stripe-Signature"],
 });
 
+// Must be BEFORE routes
 app.use(corsMiddleware);
-
-// Express 5-safe OPTIONS handling (NO "*")
-app.use((req, res, next) => {
-  if (req.method === "OPTIONS") return corsMiddleware(req, res, next);
-  next();
-});
+// Express 5-safe preflight (no "*")
+app.options(/.*/, corsMiddleware);
 
 // Stripe webhook (must be before express.json)
 createWebhookRoute(app);
@@ -61,18 +58,35 @@ app.use("/api/stamp", stampRoutes);
 app.use("/api/order", orderRoutes);
 app.use("/api/checkout", checkoutRoutes);
 
+// Health check
+app.get("/health", (req, res) => {
+  res.json({
+    status: "ok",
+    mongo: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+    uptime: process.uptime(),
+  });
+});
+
 // Serve React build only when present
 const clientBuildPath = path.join(__dirname, "public");
 if (fs.existsSync(path.join(clientBuildPath, "index.html"))) {
   app.use(express.static(clientBuildPath));
+
+  // SPA fallback for non-API GET routes
   app.use((req, res, next) => {
     if (req.method !== "GET") return next();
-    if (req.path.startsWith("/api")) return next();
+    if (req.path.startsWith("/api") || req.path.startsWith("/webhook")) return next();
     return res.sendFile(path.join(clientBuildPath, "index.html"));
   });
 } else {
   app.get("/", (req, res) => res.send("API running"));
 }
+
+// Error handler LAST
+app.use((err, req, res, next) => {
+  console.error("❌ Unhandled error:", err);
+  res.status(500).json({ error: err?.message || "Internal Server Error" });
+});
 
 // MongoDB
 mongoose
