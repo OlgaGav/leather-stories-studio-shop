@@ -117,7 +117,7 @@ export default function ProductCard({ product, onOrderNow }) {
         )}
 
         {/* Personalization */}
-        <div className="mt-6">
+        {/* <div className="mt-6">
           <button
             className="text-s uppercase tracking-widest text-[#b26a2a] hover:opacity-80"
             onClick={() => setModalOpen(true)}
@@ -137,7 +137,7 @@ export default function ProductCard({ product, onOrderNow }) {
               </span>
             </div>
           )}
-        </div>
+        </div> */}
 
         {/* Order now */}
         <button
