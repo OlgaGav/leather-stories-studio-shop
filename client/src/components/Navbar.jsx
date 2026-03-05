@@ -56,15 +56,15 @@ const Navbar = () => {
         <Link
           to="/"
           onClick={() => setMenuOpen(false)}
-          className="flex items-center font-display text-lg md:text-xl text-primary-foreground"
+          className="flex items-center font-display text-2xl md:text-xl lg:text-xl text-primary-foreground"
         >
           <img
             src="/images/logo-light.png"
             alt="Leather Stories Studio Logo"
-            className="h-10 w-10 mr-2"
+            className="h-12 w-12 md:h-10 md:w-10 mr-2"
           />
           Leather Stories{" "}
-          <span className="font-script text-gold-accent text-2xl md:text-2xl leading-none ml-1">
+          <span className="font-script text-gold-accent text-3xl md:text-2xl lg:text-2xl leading-none ml-1">
             Studio
           </span>
         </Link>

@@ -3,15 +3,15 @@ export default function Story() {
     <section id="story" className="mx-auto max-w-6xl px-6 py-14">
       <div className="grid gap-10 md:grid-cols-2">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight">
+          <h2 className="text-gold-accent tracking-[0.3em] uppercase text-lg mb-6">
             Crafted for daily use.
           </h2>
-          <p className="mt-3 text-neutral-600">
+          <p className="mt-3 text-lg text-muted-foreground">
             Clean lines, durable stitching, and a finish that gets better over
             time. Each wallet is made in small batches with attention to detail.
           </p>
 
-          <ul className="mt-6 space-y-2 text-sm text-neutral-700">
+          <ul className="mt-6 space-y-2 text-lg text-muted-foreground" >
             <li>• Full-grain leather</li>
             <li>• Minimal, premium design</li>
             <li>• Optional personalization</li>
