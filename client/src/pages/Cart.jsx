@@ -66,7 +66,7 @@ export default function Cart() {
       };
 
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/checkout/create-session`,
+        "/api/checkout/create-session",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

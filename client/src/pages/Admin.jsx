@@ -4,7 +4,7 @@ export default function Admin() {
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/api/admin/stats`)
+    fetch("/api/admin/stats")
       .then(res => res.json())
       .then(data => setStats(data));
   }, []);
