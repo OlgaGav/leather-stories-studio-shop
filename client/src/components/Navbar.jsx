@@ -51,7 +51,7 @@ const Navbar = () => {
           : "bg-espresso/80"
       }`}
     >
-      <div className="container px-6 flex items-center justify-between h-14 md:h-16">
+      <div className="container px-6 flex items-center justify-between h-16 md:h-18">
         {/* Logo */}
         <Link
           to="/"
