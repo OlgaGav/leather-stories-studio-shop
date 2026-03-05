@@ -9,6 +9,7 @@ const Success = () => {
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [timedOut, setTimedOut] = useState(false);
 
   const { clearCart } = useCart();
   const didClearRef = useRef(false);
@@ -31,6 +32,8 @@ const Success = () => {
   useEffect(() => {
     if (!sessionId) {
       setLoading(false);
+      setTimedOut(false);
+      setOrder(null);
       return;
     }
 
@@ -42,40 +45,55 @@ const Success = () => {
 
     async function load() {
       try {
-        const res = await fetch(
-          "/api/order/session/${sessionId}",
-        );
-
+        const res = await fetch(`/api/order/session/${sessionId}`);
         const data = await res.json().catch(() => ({}));
         if (cancelled) return;
 
-        if (res.ok) {
+        // Success: got an order object
+        if (res.ok && data && !data.error) {
           setOrder(data);
           setLoading(false);
+          setTimedOut(false);
+
           if (!didClearRef.current && shouldClearForSession(sessionId)) {
-            clearCart(); // clears state -> effect saves [] to STORAGE_KEY
+            clearCart();
             markCleared(sessionId);
             didClearRef.current = true;
           }
           return;
         }
 
-        // Order not ready yet: keep waiting (webhook delay)
-        if (
-          (res.status === 202 || res.status === 409) &&
-          attempts < maxAttempts
-        ) {
+        const msg = String(data?.error || "").toLowerCase();
+        const isFinalizing =
+          res.status === 202 ||
+          res.status === 409 ||
+          res.status === 404 || // often "not created yet"
+          msg.includes("finalizing") ||
+          msg.includes("processing") ||
+          msg.includes("paid");
+
+        // Keep waiting (webhook delay)
+        if (isFinalizing && attempts < maxAttempts) {
           attempts += 1;
           setTimeout(load, intervalMs);
           return;
         }
 
-        // Stop polling on other errors or timeout
+        // Timeout / stop retrying
         setLoading(false);
+        setTimedOut(true);
       } catch {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setTimedOut(true);
+        }
       }
     }
+
+    // reset state for this session
+    setLoading(true);
+    setTimedOut(false);
+    setOrder(null);
 
     load();
 
@@ -120,39 +138,15 @@ const Success = () => {
     </Link>
   );
 
-  if (loading) {
-    return (
-      <Page>
-        <div className="container mx-auto px-6 py-16">
-          <Card>
-            <h1 className="font-display text-2xl md:text-3xl">
-              Verifying payment…
-            </h1>
-            <p className="mt-2 font-body text-sm text-muted-foreground">
-              Please wait while we confirm your order with Stripe.
-            </p>
-
-            <div className="mt-6 h-2 w-full overflow-hidden rounded-full bg-muted">
-              <div className="h-full w-1/3 animate-pulse bg-accent/70" />
-            </div>
-          </Card>
-        </div>
-      </Page>
-    );
-  }
-
   if (!sessionId) {
     return (
       <Page>
         <div className="mx-auto max-w-2xl">
           <Card>
-            <h1 className="font-display text-2xl md:text-3xl">
-              Missing session_id
-            </h1>
+            <h1 className="font-display text-2xl md:text-3xl">Missing session_id</h1>
             <p className="mt-2 font-body text-sm text-muted-foreground">
               This page needs a Stripe session id in the URL.
             </p>
-
             <div className="mt-8">
               <PrimaryLink to="/">Go back home</PrimaryLink>
             </div>
@@ -162,17 +156,83 @@ const Success = () => {
     );
   }
 
+  // Loading state (still polling)
+  if (loading) {
+    return (
+      <Page>
+        <div className="mx-auto max-w-2xl">
+          <Card>
+            <p className="text-[11px] tracking-[0.22em] uppercase text-gold-accent">
+              Payment received
+            </p>
+            <h1 className="mt-3 font-display text-3xl md:text-4xl">
+              Thank you for your order!
+            </h1>
+            <p className="mt-2 font-body text-sm text-muted-foreground">
+              We’re finalizing your order details. This can take a few seconds.
+            </p>
+            <div className="mt-6 h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div className="h-full w-1/3 animate-pulse bg-accent/70" />
+            </div>
+          </Card>
+        </div>
+      </Page>
+    );
+  }
+
+  // Finished polling but still no order
+  if (!order && timedOut) {
+    return (
+      <Page>
+        <div className="mx-auto max-w-2xl">
+          <Card>
+            <p className="text-[11px] tracking-[0.22em] uppercase text-gold-accent">
+              Payment processing
+            </p>
+
+            <h1 className="mt-3 font-display text-3xl md:text-4xl">
+              Thank you for your order!
+            </h1>
+
+            <p className="mt-3 font-body text-sm text-muted-foreground">
+              Your payment is still processing. You will receive an email update
+              when processing is completed.
+            </p>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <button
+                className="inline-flex items-center justify-center rounded-full bg-espresso px-6 py-3 text-sm font-medium tracking-wide text-primary-foreground transition hover:opacity-90"
+                onClick={() => window.location.reload()}
+              >
+                Refresh
+              </button>
+              <SecondaryLink to="/">Home</SecondaryLink>
+            </div>
+
+            <p className="mt-6 text-xs text-muted-foreground">
+              Session: <span className="font-mono">{sessionId}</span>
+            </p>
+          </Card>
+        </div>
+      </Page>
+    );
+  }
+
+  // If loading is false and order is still null (rare), show same processing UX
   if (!order) {
     return (
       <Page>
         <div className="mx-auto max-w-2xl">
           <Card>
-            <h1 className="font-display text-2xl md:text-3xl">
-              Something went wrong
+            <p className="text-[11px] tracking-[0.22em] uppercase text-gold-accent">
+              Payment processing
+            </p>
+            <h1 className="mt-3 font-display text-3xl md:text-4xl">
+              Thank you for your order!
             </h1>
-            <p className="mt-2 font-body text-sm text-muted-foreground">
-              We couldn’t load your order yet. If you just paid, refresh in a
-              moment.
+            <p className="mt-3 font-body text-sm text-muted-foreground">
+              Your payment is still processing. You will receive an email update
+              when processing is completed.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -190,6 +250,7 @@ const Success = () => {
     );
   }
 
+  // Order confirmed (we have full details)
   return (
     <Page>
       <div className="mx-auto max-w-3xl pt-6">
@@ -240,9 +301,7 @@ const Success = () => {
                         <>
                           {" "}
                           • Leather:{" "}
-                          <span className="text-foreground">
-                            {item.leatherId}
-                          </span>
+                          <span className="text-foreground">{item.leatherId}</span>
                         </>
                       ) : null}
                     </div>
