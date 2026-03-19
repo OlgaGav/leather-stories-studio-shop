@@ -83,17 +83,13 @@ const stripeWebhook = (app) => {
           });
           console.log("✅ Order saved for session:", session.id);
 
-          // Send emails (don't break webhook if email fails)
+          // Send emails (don't await, as we don't want to block the response)
           sendEmail(order).catch((e) =>
             console.error("❌ Email sending failed:", e.message),
           );
         } catch (err) {
-          console.error(
-            "❌ Failed processing checkout.session.completed:",
-            err,
-          );
-          // Still 200 so Stripe doesn't retry aggressively
           console.error("❌ Order create failed:", err?.message);
+          if (err?.errors) console.error("❌ Validation errors:", JSON.stringify(err.errors, null, 2));
           console.error(err);
         }
       }
