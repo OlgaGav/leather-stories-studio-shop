@@ -26,8 +26,7 @@ export default function Hero() {
         </h1>
 
         <p className="text-primary-foreground/80 text-base md:text-lg max-w-md mx-auto mb-10">
-          Two timeless models. Full-grain leather. Optional personalization.
-          Crafted to age beautifully.
+          Every wallet tells a story. Yours starts here — hand-cut, hand-stitched, personalized.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
