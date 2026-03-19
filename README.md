@@ -46,6 +46,8 @@ Create a .env file in the project root:
 ### 3) Run frontend
 
 ```
+// from the root
+cd client
 npm run dev
 ```
 
@@ -54,7 +56,16 @@ Frontend will be available at: http://localhost:5173
 ### 4) Run backend
 
 ```
+// from the root
+cd server 
 npm run dev
+```
+
+### Stripe to work locally
+
+```
+stripe login
+stripe listen --forward-to http://localhost:5050/webhook
 ```
 
 ## Docker build
@@ -62,5 +73,42 @@ npm run dev
 For the development
 
 ```
+// REMOVE DOCKER CONTAINER
+docker compose -f docker.compose.dev.yaml down
+// REBUILD
 docker compose -f docker.compose.dev.yaml up --build
+```
+
+Check API is running:
+
+```
+docker compose -f docker.compose.dev.yaml exec client sh -lc "wget -qS -O- http://server:5050/ 2>&1 | head -n 20"
+```
+
+### Docker restart
+
+```
+docker compose -f docker.compose.dev.yaml restart
+docker compose -f docker.compose.yaml restart
+
+// separately
+docker compose -f docker.compose.dev.yaml restart server
+docker compose restart mongo
+docker compose restart client
+
+// restart Docker itself, engine (Ubuntu)
+sudo systemctl restart docker
+
+```
+
+### Docker logs
+
+```
+<!-- dev from the root -->
+docker compose -f docker.compose.dev.yaml logs -f --tail=200 server
+<!-- hosting server live -->
+docker logs -f --tail=100 staging-app-1
+docker logs staging-app-1 | grep Order
+<!-- exec inside container -->
+docker exec -it staging-app-1 sh
 ```

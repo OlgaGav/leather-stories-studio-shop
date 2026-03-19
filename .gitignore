@@ -29,3 +29,5 @@ server/pnpm-lock.yaml
 # IDE
 .vscode
 .idea
+CLAUDE.md
+description.md
