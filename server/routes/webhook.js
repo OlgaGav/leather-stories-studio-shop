@@ -2,6 +2,7 @@ import express from "express";
 import Stripe from "stripe";
 import Order from "../models/Order.js";
 import sendEmail from "../utils/mailer.js";
+import { extractShippingAddress } from "../utils/extractShippingAddress.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -14,30 +15,6 @@ function safeParseItems(session) {
   } catch {
     return [];
   }
-}
-
-/**
- * Maps Stripe session shipping_details + customer_details → our DB schema.
- * Returns null if the minimum required fields (line1, country) are absent.
- */
-function extractShippingAddress(session) {
-  const sd = session.shipping_details;  // present when shipping_address_collection is enabled
-  const cd = session.customer_details;  // always present; contains phone
-
-  if (!sd?.address?.line1 || !sd?.address?.country) {
-    return null;
-  }
-
-  return {
-    name:       sd.name || cd?.name || "",
-    line1:      sd.address.line1 || "",
-    line2:      sd.address.line2 || "",
-    city:       sd.address.city || "",
-    state:      sd.address.state || "",
-    postalCode: sd.address.postal_code || "",
-    country:    sd.address.country || "",
-    phone:      cd?.phone || "",
-  };
 }
 
 const stripeWebhook = (app) => {
@@ -75,10 +52,31 @@ const stripeWebhook = (app) => {
           return res.json({ received: true });
         }
 
-        // Idempotency guard — Stripe may retry the webhook
+        // Idempotency guard — Stripe may retry the webhook.
+        // If the order exists but shippingAddress was never persisted, patch it now.
         const existing = await Order.findOne({ stripeSessionId: session.id });
         if (existing) {
-          console.log("ℹ️  Duplicate webhook for session:", session.id, "— skipping");
+          if (!existing.shippingAddress) {
+            const shippingAddress = extractShippingAddress(session);
+            if (shippingAddress) {
+              await Order.updateOne(
+                { _id: existing._id },
+                { $set: { shippingAddress } },
+              );
+              console.log(
+                "✅ Patched missing shippingAddress for order:", existing._id,
+                "session:", session.id,
+              );
+            } else {
+              console.error(
+                "❌ Shipping address still missing on webhook replay for session:", session.id,
+                "— manual follow-up required.",
+                { shipping_details: session.shipping_details, customer_details: session.customer_details },
+              );
+            }
+          } else {
+            console.log("ℹ️  Duplicate webhook for session:", session.id, "— skipping");
+          }
           return res.json({ received: true });
         }
 
