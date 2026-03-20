@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Truck } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { getColorName, getLeatherName } from "../utils/catalog";
 import { getVariantImages } from "../utils/productImages";
@@ -31,6 +32,22 @@ function getFallbackImage(productId) {
   }
 
   return image;
+}
+
+function CartShippingNotice() {
+  return (
+    <div className="flex items-start gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3">
+      <Truck size={16} className="mt-0.5 shrink-0 text-gold-accent" />
+      <div>
+        <p className="text-sm font-medium text-foreground">
+          Free shipping in the US
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Your order ships free anywhere in the United States.
+        </p>
+      </div>
+    </div>
+  );
 }
 
 export default function Cart() {
@@ -315,8 +332,12 @@ export default function Cart() {
                 </div>
               </div>
 
+              <div className="mt-6">
+                <CartShippingNotice />
+              </div>
+
               <button
-                className="mt-6 w-full rounded-full bg-accent px-6 py-3 text-lg font-medium tracking-wide text-accent-foreground shadow-lg hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-4 w-full rounded-full bg-accent px-6 py-3 text-lg font-medium tracking-wide text-accent-foreground shadow-lg hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleCheckout}
                 disabled={!canCheckout}
               >

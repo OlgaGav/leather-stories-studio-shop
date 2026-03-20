@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
 import { Play } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import PersonalizationModal from "./PersonalizationModal";
@@ -56,9 +56,22 @@ export default function ProductDetailsPage() {
 function ProductDetailsContent({ product }) {
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const [searchParams] = useSearchParams();
 
-  const [colorId, setColorId] = useState(product.colors?.[0]?.id || "");
-  const [leatherId, setLeatherId] = useState(product.leathers?.[0]?.id || "");
+  // Seed selection from query params (passed by ProductCard).
+  // Validate each param against the product's actual options so a
+  // hand-crafted or stale URL can never set an invalid variant.
+  const initialColorId =
+    product.colors?.find((c) => c.id === searchParams.get("color"))?.id ??
+    product.colors?.[0]?.id ??
+    "";
+  const initialLeatherId =
+    product.leathers?.find((l) => l.id === searchParams.get("leather"))?.id ??
+    product.leathers?.[0]?.id ??
+    "";
+
+  const [colorId, setColorId] = useState(initialColorId);
+  const [leatherId, setLeatherId] = useState(initialLeatherId);
   const [activeIndex, setActiveIndex] = useState(0);
   const [personalization, setPersonalization] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);

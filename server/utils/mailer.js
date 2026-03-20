@@ -19,6 +19,19 @@ function formatMoney(amountCents, currency = "EUR") {
   return `${symbol}${amount.toFixed(2)}`;
 }
 
+function buildShippingText(addr) {
+  if (!addr?.line1) return "  Not provided";
+  const lines = [
+    addr.name,
+    addr.line1,
+    addr.line2,
+    [addr.city, addr.state, addr.postalCode].filter(Boolean).join(", "),
+    addr.country,
+    addr.phone ? `Phone: ${addr.phone}` : null,
+  ].filter(Boolean);
+  return lines.map((l) => `  ${l}`).join("\n");
+}
+
 function buildItemsText(items = []) {
   return items
     .map((item, index) => {
@@ -38,6 +51,7 @@ ${index + 1}. ${item.name || item.productId}
 const sendEmail = async (order) => {
   const itemsText = buildItemsText(order.items);
   const totalText = formatMoney(order.amountTotal, order.currency);
+  const shippingText = buildShippingText(order.shippingAddress);
 
   // ----------------------
   // Customer email
@@ -55,6 +69,9 @@ Items:
 ${itemsText}
 
 Total Paid: ${totalText}
+
+Shipping Address:
+${shippingText}
 
 We will start crafting your order shortly.
 You’ll receive another email when it ships.
@@ -81,6 +98,9 @@ Items:
 ${itemsText}
 
 Total: ${totalText}
+
+Shipping Address:
+${shippingText}
 
 Full Order Object:
 ${JSON.stringify(order, null, 2)}

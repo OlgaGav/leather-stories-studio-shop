@@ -16,15 +16,38 @@ function safeParseItems(session) {
   }
 }
 
+/**
+ * Maps Stripe session shipping_details + customer_details → our DB schema.
+ * Returns null if the minimum required fields (line1, country) are absent.
+ */
+function extractShippingAddress(session) {
+  const sd = session.shipping_details;  // present when shipping_address_collection is enabled
+  const cd = session.customer_details;  // always present; contains phone
+
+  if (!sd?.address?.line1 || !sd?.address?.country) {
+    return null;
+  }
+
+  return {
+    name:       sd.name || cd?.name || "",
+    line1:      sd.address.line1 || "",
+    line2:      sd.address.line2 || "",
+    city:       sd.address.city || "",
+    state:      sd.address.state || "",
+    postalCode: sd.address.postal_code || "",
+    country:    sd.address.country || "",
+    phone:      cd?.phone || "",
+  };
+}
+
 const stripeWebhook = (app) => {
   app.post(
     "/webhook",
     express.raw({ type: "application/json" }),
     async (req, res) => {
-      console.log("✅ Webhook hit"); // <--- added log for debugging
       const sig = req.headers["stripe-signature"];
-      console.log("Stripe-Signature header present:", Boolean(sig)); // <--- added log for debugging
       let event;
+
       try {
         event = stripe.webhooks.constructEvent(
           req.body,
@@ -38,31 +61,33 @@ const stripeWebhook = (app) => {
 
       if (event.type === "checkout.session.completed") {
         const session = event.data.object;
-        console.log("EVENT:", event.type, "session.id:", session.id, "payment_status:", session.payment_status, "status:", session.status);
-        console.log("EVENT TYPE:", event.type);
-        console.log("session.id:", session.id);
-        console.log("payment_status:", session.payment_status);
-        console.log("customer_email:", session.customer_email);
+
+        console.log(
+          "📦 Webhook checkout.session.completed — session:", session.id,
+          "payment_status:", session.payment_status,
+          "customer_email:", session.customer_email,
+        );
+
         const isPaid =
           session.payment_status === "paid" || session.status === "complete";
+
+        if (!isPaid) {
+          return res.json({ received: true });
+        }
+
+        // Idempotency guard — Stripe may retry the webhook
+        const existing = await Order.findOne({ stripeSessionId: session.id });
+        if (existing) {
+          console.log("ℹ️  Duplicate webhook for session:", session.id, "— skipping");
+          return res.json({ received: true });
+        }
+
         try {
-          // Only treat it as paid
-          if (!isPaid) {
-            return res.json({ received: true });
-          }
-
-          // Avoid duplicates if Stripe retries
-          const existing = await Order.findOne({ stripeSessionId: session.id });
-          if (existing) {
-            return res.json({ received: true });
-          }
-
           const items = safeParseItems(session);
 
-          // Build order items (supports your compact metadata format)
           const orderItems = items.map((i) => ({
             productId: i.productId,
-            name: i.name || i.productId, // in case you add it later
+            name: i.name || i.productId,
             colorId: i.colorId,
             leatherId: i.leatherId || "",
             personalizationText: i.pText || i.personalizationText || "",
@@ -72,25 +97,44 @@ const stripeWebhook = (app) => {
             currency: i.cur || session.currency?.toUpperCase() || "EUR",
           }));
 
+          // Extract shipping address from Stripe session data
+          const shippingAddress = extractShippingAddress(session);
+          if (!shippingAddress) {
+            // Payment was taken — we must still create the order so it isn't lost.
+            // Log an actionable error for manual follow-up.
+            console.error(
+              "❌ Shipping address missing or incomplete for session:", session.id,
+              "— order will be created WITHOUT shipping address. Manual follow-up required.",
+              {
+                shipping_details: session.shipping_details,
+                customer_details: session.customer_details,
+              },
+            );
+          }
+
           const order = await Order.create({
-            stripeSessionId: session.id, // ✅ used by Success page
+            stripeSessionId: session.id,
             orderRef: session.metadata?.orderRef || "",
             items: orderItems,
-            amountTotal: session.amount_total, // cents
+            amountTotal: session.amount_total,
             currency: (session.currency || "eur").toUpperCase(),
             customerEmail: session.customer_email,
             paymentStatus: "paid",
+            shippingAddress,
           });
-          console.log("✅ Order saved for session:", session.id);
 
-          // Send emails (don't await, as we don't want to block the response)
+          console.log("✅ Order saved:", order._id, "session:", session.id);
+
           sendEmail(order).catch((e) =>
             console.error("❌ Email sending failed:", e.message),
           );
         } catch (err) {
-          console.error("❌ Order create failed:", err?.message);
-          if (err?.errors) console.error("❌ Validation errors:", JSON.stringify(err.errors, null, 2));
+          console.error("❌ Order create failed for session:", session.id, "—", err?.message);
+          if (err?.errors) {
+            console.error("❌ Validation errors:", JSON.stringify(err.errors, null, 2));
+          }
           console.error(err);
+          // Return 200 so Stripe does not retry — the error needs manual investigation
         }
       }
 
