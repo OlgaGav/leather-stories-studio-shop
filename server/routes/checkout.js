@@ -99,7 +99,7 @@ router.post("/create-session", async (req, res) => {
 
       customer_email: customerEmail || undefined,
 
-      // Collect shipping address — required for physical goods
+      // Collect shipping address for fulfilment.
       shipping_address_collection: {
         allowed_countries: ALLOWED_SHIPPING_COUNTRIES,
       },
@@ -112,7 +112,23 @@ router.post("/create-session", async (req, res) => {
         items: metadataItemsJson,
       },
     });
+    console.log("Created Stripe session:", session.id);
+    console.log(
+      "shipping_address_collection on created session:",
+      session.shipping_address_collection,
+    );
 
+    const processedSession = await stripe.checkout.sessions.retrieve(
+      session.id,
+    );
+    console.log(
+      "Retrieved session shipping details:",
+      session.shipping_details,
+    );
+    console.log(
+      "Retrieved session shipping config:",
+      session.shipping_address_collection,
+    );
     return res.json({ url: session.url, id: session.id, orderRef });
   } catch (err) {
     console.error("Checkout error:", err);
