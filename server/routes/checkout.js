@@ -71,7 +71,7 @@ router.post("/create-session", async (req, res) => {
       },
     }));
 
-    const compactItems = items.map((i) => ({
+    const compactItems = normalizedItems.map((i) => ({
       productId: i.productId,
       name: i.name,
       colorId: i.colorId,
@@ -115,14 +115,10 @@ router.post("/create-session", async (req, res) => {
       },
     });
     
-    console.log(
-      "shipping_address_collection on created session:",
-      session.shipping_details,
-    );
-     console.log(
-      "session.shipping_details json to string: on created session:",
-      JSON.stringify(session.shipping_details),
-    );
+    return res.status(200).json({
+      id: session.id,
+      url: session.url,
+    });
 
   } catch (err) {
     console.error("Checkout error:", err);
