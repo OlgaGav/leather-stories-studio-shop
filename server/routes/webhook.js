@@ -71,7 +71,10 @@ const stripeWebhook = (app) => {
               console.error(
                 "❌ Shipping address still missing on webhook replay for session:", session.id,
                 "— manual follow-up required.",
-                { shipping_details: session.shipping_details, customer_details: session.customer_details },
+                {
+                  collected_information: session.collected_information,
+                  customer_details: session.customer_details,
+                },
               );
             }
           } else {
@@ -104,7 +107,7 @@ const stripeWebhook = (app) => {
               "❌ Shipping address missing or incomplete for session:", session.id,
               "— order will be created WITHOUT shipping address. Manual follow-up required.",
               {
-                shipping_details: session.shipping_details,
+                collected_information: session.collected_information,
                 customer_details: session.customer_details,
               },
             );

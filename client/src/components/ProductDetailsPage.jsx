@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom"
 import { Play } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import PersonalizationModal from "./PersonalizationModal";
+import MediaLightbox from "./MediaLightbox";
 import { products } from "../data/products";
 import { findVariant, formatMoney } from "../utils/productVariant";
 import { features } from "../config/features";
@@ -63,6 +64,7 @@ function ProductDetailsContent({ product }) {
   // hand-crafted or stale URL can never set an invalid variant.
   const initialColorId =
     product.colors?.find((c) => c.id === searchParams.get("color"))?.id ??
+    product.defaultColorId ??
     product.colors?.[0]?.id ??
     "";
   const initialLeatherId =
@@ -73,6 +75,7 @@ function ProductDetailsContent({ product }) {
   const [colorId, setColorId] = useState(initialColorId);
   const [leatherId, setLeatherId] = useState(initialLeatherId);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [personalization, setPersonalization] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -134,6 +137,7 @@ function ProductDetailsContent({ product }) {
       leatherId: product.leathers?.length ? leatherId : "",
       personalization: features.personalization ? personalization : null,
       quantity: 1,
+      imageUrl: variant?.images?.[0] || product.defaultImages?.[0] || null,
     });
 
     navigate("/cart");
@@ -167,9 +171,14 @@ function ProductDetailsContent({ product }) {
         {/* Media gallery                                                     */}
         {/* ---------------------------------------------------------------- */}
         <div>
-          {/* Main viewer */}
-          <div className="overflow-hidden rounded-3xl border border-border bg-[#efe7dc]">
-            <div className="aspect-[4/5] w-full">
+          {/* Main viewer — click to open lightbox */}
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(true)}
+            aria-label="Open fullscreen gallery"
+            className="group w-full overflow-hidden rounded-3xl border border-border bg-[#efe7dc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b26a2a]"
+          >
+            <div className="relative aspect-[4/5] w-full">
               {activeItem?.type === "video" ? (
                 <video
                   ref={videoRef}
@@ -178,19 +187,24 @@ function ProductDetailsContent({ product }) {
                   controls
                   playsInline
                   className="h-full w-full object-contain"
+                  onClick={(e) => e.stopPropagation()}
                 />
               ) : activeItem?.type === "image" ? (
                 <img
                   key={activeItem.src}
                   src={activeItem.src}
                   alt={`${product.name} — view ${activeIndex + 1}`}
-                  className="h-full w-full object-contain p-4"
+                  className="h-full w-full object-contain p-4 transition-opacity group-hover:opacity-90"
                 />
               ) : (
                 <div className="h-full w-full" />
               )}
+              {/* Expand hint */}
+              <div className="pointer-events-none absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/70 opacity-0 backdrop-blur-sm transition group-hover:opacity-100 group-focus-visible:opacity-100">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-neutral-700"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+              </div>
             </div>
-          </div>
+          </button>
 
           {/* Thumbnail strip — shown only when there is more than one item */}
           {mediaItems.length > 1 && (
@@ -389,6 +403,15 @@ function ProductDetailsContent({ product }) {
           onSave={setPersonalization}
           product={product}
           initialValue={personalization}
+        />
+      )}
+
+      {lightboxOpen && (
+        <MediaLightbox
+          items={mediaItems}
+          initialIndex={activeIndex}
+          onClose={() => setLightboxOpen(false)}
+          productName={product.name}
         />
       )}
     </section>

@@ -11,27 +11,58 @@ export const products = [
     badgeLine:
       "Italian Pueblo Leather • Hand-Stitched • Develops a Rich Patina",
     colors: [
-      { id: "olive-grey", name: "Olive Grey", hex: "#6b6f5b" },
+      {
+        id: "olive-grey-embossed",
+        name: "Olive Grey Embossed",
+        hex: "#6b6f5b",
+      },
       { id: "red", name: "Red", hex: "#8b2f2f" },
+      {
+        id: "red-embossed",
+        name: "Red Embossed",
+        hex: "#b13a46",
+      },
       { id: "black", name: "Black", hex: "#111111" },
     ],
     leathers: [{ id: "pueblo", name: "Pueblo Leather" }],
-    defaultImages: ["/images/cardholder/nomad-black-1.jpg"],
+    defaultColorId: "olive-grey-embossed",
+    defaultImages: ["/images/cardholder/nomad-olive-1.jpg"],
     variants: [
       {
         colorId: "black",
         leatherId: "pueblo",
-        images: ["/images/cardholder/nomad-black-1.jpg"],
+        images: [
+          "/images/cardholder/nomad-black-1.jpg",
+          "/images/cardholder/nomad-black-2.jpg",
+        ],
+        video: "/videos/nomad-black.mp4",
       },
       {
-        colorId: "olive-grey",
+        colorId: "olive-grey-embossed",
         leatherId: "pueblo",
-        images: ["/images/cardholder/nomad-olive-1.jpg"],
+        images: [
+          "/images/cardholder/nomad-olive-1.jpg",
+          "/images/cardholder/nomad-olive-2.jpg",
+        ],
+        video: "/videos/nomad-olive-embossed.mp4",
       },
       {
         colorId: "red",
         leatherId: "pueblo",
-        images: ["/images/cardholder/nomad-red-1.jpg"],
+        images: [
+          "/images/cardholder/nomad-red-1.jpg",
+          "/images/cardholder/nomad-red-2.jpg",
+        ],
+        video: "/videos/nomad-red.mp4",
+      },
+      {
+        colorId: "red-embossed",
+        leatherId: "pueblo",
+        images: [
+          "/images/cardholder/nomad-red-embossed-1.jpg",
+          "/images/cardholder/nomad-red-embossed-2.jpg",
+        ],
+        video: "/videos/nomad-red-embossed.mp4",
       },
     ],
     details: {
@@ -61,8 +92,7 @@ export const products = [
         dimensions: '4.0" × 2.7"',
         capacity: "3–5 cards",
       },
-      giftReady:
-        "Each Nomad cardholder arrives in gift-ready packaging.",
+      giftReady: "Each Nomad cardholder arrives in gift-ready packaging.",
     },
   },
 
@@ -80,28 +110,28 @@ export const products = [
     colors: [
       { id: "olive-grey", name: "Olive Grey", hex: "#6b6f5b" },
       { id: "red", name: "Red", hex: "#8b2f2f" },
-      { id: "black", name: "Black", hex: "#111111" },
     ],
     leathers: [{ id: "pueblo", name: "Pueblo Leather" }],
-    defaultImages: ["/images/cardholder/ranger-black-1.jpg"],
+    defaultColorId: "olive-grey",
+    defaultImages: ["/images/cardholder/ranger-olive-1.jpg"],
     variants: [
-      {
-        colorId: "black",
-        leatherId: "pueblo",
-        images: [
-          "/images/cardholder/ranger-black-1.jpg",
-          "/images/cardholder/ranger-black-2.jpg",
-        ],
-      },
       {
         colorId: "olive-grey",
         leatherId: "pueblo",
-        images: ["/images/cardholder/ranger-olive-1.jpg"],
+        images: [
+          "/images/cardholder/ranger-olive-1.jpg",
+          "/images/cardholder/ranger-olive-2.jpg",
+        ],
+        video: "/videos/ranger-olive.mp4",
       },
       {
         colorId: "red",
         leatherId: "pueblo",
-        images: ["/images/cardholder/ranger-red-1.jpg"],
+        images: [
+          "/images/cardholder/ranger-red-1.jpg",
+          "/images/cardholder/ranger-red-2.jpg",
+        ],
+        video: "/videos/ranger-red.mp4",
       },
     ],
     details: {
@@ -131,8 +161,7 @@ export const products = [
         dimensions: '4.0" × 2.7"',
         capacity: "3–5 cards + folded cash",
       },
-      giftReady:
-        "Each Ranger cardholder arrives in gift-ready packaging.",
+      giftReady: "Each Ranger cardholder arrives in gift-ready packaging.",
     },
   },
 
@@ -145,10 +174,10 @@ export const products = [
     currency: "USD",
     description:
       "Premium minimalist cardholder crafted from Badalassi Carlo Belfagor leather in a natural tone, with hand-stitched construction and timeless character.",
-    badgeLine:
-      "Badalassi Carlo Belfagor • Hand-Stitched • Natural Finish",
+    badgeLine: "Badalassi Carlo Belfagor • Hand-Stitched • Natural Finish",
     colors: [{ id: "natural", name: "Natural", hex: "#d8c3a5" }],
     leathers: [{ id: "belfagor", name: "Badalassi Carlo - Belfagor" }],
+    defaultColorId: "natural",
     defaultImages: ["/images/cardholder/nomad-premium-natural-1.jpg"],
     variants: [
       {
@@ -158,7 +187,7 @@ export const products = [
           "/images/cardholder/nomad-premium-natural-1.jpg",
           "/images/cardholder/nomad-premium-natural-2.jpg",
         ],
-        video: "/videos/nomand_premium_natural.mp4",
+        video: "/videos/nomad-premium.mp4",
       },
     ],
     details: {
