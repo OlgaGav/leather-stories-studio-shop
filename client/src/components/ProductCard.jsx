@@ -63,7 +63,7 @@ export default function ProductCard({ product, onOrderNow }) {
     <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
       {/* Image carousel */}
       <div className="relative group bg-[#efe7dc]">
-        <Link to={`/products/${product.slug}`} className="block">
+        <Link to={`/products/${product.slug}?color=${colorId}&leather=${leatherId}`} className="block">
           <div
             className="aspect-[1/1] w-full overflow-hidden"
             onTouchStart={multi ? onTouchStart : undefined}
@@ -126,7 +126,7 @@ export default function ProductCard({ product, onOrderNow }) {
       <div className="p-6 md:p-8">
         {/* Title + Price */}
         <div className="flex items-start justify-between gap-6">
-          <Link to={`/products/${product.slug}`} className="min-w-0">
+          <Link to={`/products/${product.slug}?color=${colorId}&leather=${leatherId}`} className="min-w-0">
             <h3 className="text-3xl font-semibold tracking-tight text-neutral-800 hover:text-[#8b4a1f]">
               {product.name}
             </h3>
@@ -205,7 +205,7 @@ export default function ProductCard({ product, onOrderNow }) {
         {/* Links */}
         <div className="mt-8">
           <Link
-            to={`/products/${product.slug}`}
+            to={`/products/${product.slug}?color=${colorId}&leather=${leatherId}`}
             className="inline-block text-sm uppercase tracking-[0.18em] text-[#b26a2a] hover:opacity-80"
           >
             View details

@@ -1,6 +1,7 @@
 import express from "express";
 import Stripe from "stripe";
 import crypto from "crypto";
+import { ALLOWED_SHIPPING_COUNTRIES } from "../config/shipping.js";
 
 const router = express.Router();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -16,12 +17,13 @@ function normalizeItem(raw) {
     currency: (raw?.currency || "USD").toUpperCase(),
   };
 }
+
 function validateItem(item) {
   if (!item?.productId) return "Missing productId";
   if (!item?.name) return "Missing name";
   if (!Number.isFinite(item?.price) || item.price <= 0) return "Invalid price";
   if (!item?.leatherId && !item?.colorId)
-    return "Missing colorId and leatherId"; // at least one should be present
+    return "Missing colorId and leatherId";
   if (!item?.currency) return "Missing currency";
   if (!Number.isInteger(item?.quantity) || item.quantity < 1)
     return "Invalid quantity";
@@ -47,13 +49,12 @@ router.post("/create-session", async (req, res) => {
       if (err) return res.status(400).json({ error: err, item: it });
     }
 
-    // Create your own order reference (useful for webhook/admin later)
     const orderRef = crypto.randomUUID();
 
     const line_items = normalizedItems.map((item) => ({
       quantity: item.quantity,
       price_data: {
-        currency: item.currency.toLowerCase(), // "USD" -> "usd"
+        currency: item.currency.toLowerCase(),
         unit_amount: Math.round(item.price * 100),
         product_data: {
           name: item.name,
@@ -70,8 +71,6 @@ router.post("/create-session", async (req, res) => {
       },
     }));
 
-    // ✅ Metadata size: keep it small and valid JSON
-    // Stripe metadata has limits; keep only essentials.
     const compactItems = items.map((i) => ({
       productId: i.productId,
       name: i.name,
@@ -86,7 +85,6 @@ router.post("/create-session", async (req, res) => {
 
     const metadataItemsJson = JSON.stringify(compactItems);
     if (metadataItemsJson.length > 4500) {
-      // if cart is huge (unlikely for you), still don’t break JSON
       return res.status(400).json({
         error: "Cart too large to store in metadata. Reduce items.",
       });
@@ -99,12 +97,15 @@ router.post("/create-session", async (req, res) => {
       success_url: `${process.env.CLIENT_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.CLIENT_URL}/cart`,
 
-      // Let Stripe collect email if you don't supply it
       customer_email: customerEmail || undefined,
 
-      // Optional but useful for physical goods:
-      // phone_number_collection: { enabled: true },
-      // shipping_address_collection: { allowed_countries: ["US"] },
+      // Collect shipping address — required for physical goods
+      shipping_address_collection: {
+        allowed_countries: ALLOWED_SHIPPING_COUNTRIES,
+      },
+
+      // Collect phone number for shipping/fulfilment
+      phone_number_collection: { enabled: true },
 
       metadata: {
         orderRef,

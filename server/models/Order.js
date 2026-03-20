@@ -10,8 +10,22 @@ const OrderItemSchema = new mongoose.Schema(
     personalizationText: { type: String, default: "" },
     personalizationFont: { type: String, default: "" },
     quantity: { type: Number, required: true, min: 1 },
-    price: { type: Number, required: true }, // dollars (your current compact metadata uses dollars)
+    price: { type: Number, required: true }, // dollars
     currency: { type: String, default: "USD" },
+  },
+  { _id: false }
+);
+
+const ShippingAddressSchema = new mongoose.Schema(
+  {
+    name:       { type: String, default: "" }, // recipient full name
+    line1:      { type: String, default: "" },
+    line2:      { type: String, default: "" },
+    city:       { type: String, default: "" },
+    state:      { type: String, default: "" }, // state / province
+    postalCode: { type: String, default: "" },
+    country:    { type: String, default: "" }, // ISO 3166-1 alpha-2
+    phone:      { type: String, default: "" },
   },
   { _id: false }
 );
@@ -28,6 +42,8 @@ const OrderSchema = new mongoose.Schema(
 
     customerEmail: { type: String, default: "" },
     paymentStatus: { type: String, default: "unpaid" },
+
+    shippingAddress: { type: ShippingAddressSchema, default: null },
   },
   { timestamps: true }
 );
