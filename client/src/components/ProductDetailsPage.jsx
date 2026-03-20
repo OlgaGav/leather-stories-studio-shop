@@ -5,6 +5,7 @@ import { useCart } from "../context/CartContext";
 import PersonalizationModal from "./PersonalizationModal";
 import { products } from "../data/products";
 import { findVariant, formatMoney } from "../utils/productVariant";
+import { features } from "../config/features";
 
 // ---------------------------------------------------------------------------
 // Media gallery helpers
@@ -118,7 +119,7 @@ function ProductDetailsContent({ product }) {
       currency: product.currency || "USD",
       colorId,
       leatherId: product.leathers?.length ? leatherId : "",
-      personalization,
+      personalization: features.personalization ? personalization : null,
       quantity: 1,
     });
 
@@ -297,12 +298,14 @@ function ProductDetailsContent({ product }) {
             {formatMoney(product.price, product.currency || "USD")}
           </button>
 
-          <button
-            className="mt-3 text-sm uppercase tracking-widest text-[#b26a2a] hover:opacity-80"
-            onClick={() => setModalOpen(true)}
-          >
-            + Add personalization
-          </button>
+          {features.personalization && (
+            <button
+              className="mt-3 text-sm uppercase tracking-widest text-[#b26a2a] hover:opacity-80"
+              onClick={() => setModalOpen(true)}
+            >
+              + Add personalization
+            </button>
+          )}
         </div>
       </div>
 
@@ -366,13 +369,15 @@ function ProductDetailsContent({ product }) {
         <p className="mt-6 text-neutral-700">{product.details?.giftReady}</p>
       </div>
 
-      <PersonalizationModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSave={setPersonalization}
-        product={product}
-        initialValue={personalization}
-      />
+      {features.personalization && (
+        <PersonalizationModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          onSave={setPersonalization}
+          product={product}
+          initialValue={personalization}
+        />
+      )}
     </section>
   );
 }

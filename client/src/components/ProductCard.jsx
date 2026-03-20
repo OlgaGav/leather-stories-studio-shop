@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import PersonalizationModal from "./PersonalizationModal";
 import { findVariant, formatMoney } from "../utils/productVariant";
+import { features } from "../config/features";
 
 function useCarousel(images) {
   const [index, setIndex] = useState(0);
@@ -232,7 +233,7 @@ export default function ProductCard({ product, onOrderNow }) {
               currency: product.currency || "USD",
               colorId,
               leatherId: product.leathers?.length ? leatherId : "",
-              personalization,
+              personalization: features.personalization ? personalization : null,
               quantity: 1,
             });
           }}
@@ -241,13 +242,15 @@ export default function ProductCard({ product, onOrderNow }) {
         </button>
 
         {/* Modal */}
-        <PersonalizationModal
-          open={modalOpen}
-          onClose={() => setModalOpen(false)}
-          onSave={setPersonalization}
-          product={product}
-          initialValue={personalization}
-        />
+        {features.personalization && (
+          <PersonalizationModal
+            open={modalOpen}
+            onClose={() => setModalOpen(false)}
+            onSave={setPersonalization}
+            product={product}
+            initialValue={personalization}
+          />
+        )}
       </div>
     </div>
   );
