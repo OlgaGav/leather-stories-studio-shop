@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { Truck } from "lucide-react";
 import { useCart } from "../context/CartContext";
-import { getColorName, getLeatherName } from "../utils/catalog";
+import MediaLightbox from "../components/MediaLightbox";
+import { getColorName, getLeatherName, productById } from "../utils/catalog";
 import { getVariantImages } from "../utils/productImages";
-import { productById } from "../utils/catalog";
+import { findVariant } from "../utils/productVariant";
 
 function formatMoney(amount, currency = "USD") {
   const symbol =
@@ -34,6 +35,14 @@ function getFallbackImage(productId) {
   return image;
 }
 
+function getItemMediaItems(item) {
+  const product = productById[item.productId];
+  if (!product) return item.imageUrl ? [{ type: "image", src: item.imageUrl }] : [];
+  const variant = findVariant(product, { colorId: item.colorId, leatherId: item.leatherId });
+  const images = variant?.images?.length ? variant.images : (product.defaultImages || []);
+  return images.map((src) => ({ type: "image", src }));
+}
+
 function CartShippingNotice() {
   return (
     <div className="flex items-start gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3">
@@ -56,6 +65,7 @@ export default function Cart() {
   const [email, setEmail] = useState("");
   const [touchedEmail, setTouchedEmail] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [lightbox, setLightbox] = useState(null); // null | { items, productName, productSlug }
 
   const emailOk = useMemo(() => isValidEmail(email), [email]);
   const canCheckout = items.length > 0 && emailOk && !submitting;
@@ -199,24 +209,32 @@ export default function Cart() {
                   >
                     {/* Left: image + details */}
                     <div className="flex gap-5 min-w-0">
-                      {/* Image */}
-                      <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-border bg-background/40">
+                      {/* Image — click to open lightbox */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const items = getItemMediaItems(item);
+                          if (items.length === 0) return;
+                          const product = productById[item.productId];
+                          setLightbox({
+                            items,
+                            productName: item.name,
+                            productSlug: product?.slug,
+                          });
+                        }}
+                        aria-label={`View ${item.name} images`}
+                        className="group h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-border bg-background/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b26a2a]"
+                      >
                         <img
                           src={imageSrc}
                           alt={item.name}
-                          className="h-full w-full object-cover"
+                          className="h-full w-full object-cover transition group-hover:opacity-80"
                           loading="lazy"
                           onError={(e) => {
-                            e.currentTarget.src = getFallbackImage(
-                              item.productId,
-                              {
-                                colorId: item.colorId,
-                                leatherId: item.leatherId,
-                              },
-                            );
+                            e.currentTarget.src = getFallbackImage(item.productId);
                           }}
                         />
-                      </div>
+                      </button>
 
                       {/* Details */}
                       <div className="min-w-0">
@@ -357,6 +375,16 @@ export default function Cart() {
           </>
         )}
       </div>
+
+      {lightbox && (
+        <MediaLightbox
+          items={lightbox.items}
+          initialIndex={0}
+          onClose={() => setLightbox(null)}
+          productName={lightbox.productName}
+          productSlug={lightbox.productSlug}
+        />
+      )}
     </div>
   );
 }

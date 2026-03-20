@@ -31,7 +31,7 @@ function useCarousel(images) {
 }
 
 export default function ProductCard({ product, onOrderNow }) {
-  const [colorId, setColorId] = useState(product.colors?.[0]?.id || "");
+  const [colorId, setColorId] = useState(product.defaultColorId || product.colors?.[0]?.id || "");
   const [leatherId, setLeatherId] = useState(product.leathers?.[0]?.id || "");
   const [personalization, setPersonalization] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -235,6 +235,7 @@ export default function ProductCard({ product, onOrderNow }) {
               leatherId: product.leathers?.length ? leatherId : "",
               personalization: features.personalization ? personalization : null,
               quantity: 1,
+              imageUrl: variant?.images?.[0] || product.defaultImages?.[0] || null,
             });
           }}
         >

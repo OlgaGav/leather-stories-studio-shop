@@ -16,16 +16,23 @@ const OrderItemSchema = new mongoose.Schema(
   { _id: false }
 );
 
-const ShippingAddressSchema = new mongoose.Schema(
+const AddressSchema = new mongoose.Schema(
   {
-    name:       { type: String, default: "" }, // recipient full name
     line1:      { type: String, default: "" },
     line2:      { type: String, default: "" },
     city:       { type: String, default: "" },
     state:      { type: String, default: "" }, // state / province
     postalCode: { type: String, default: "" },
     country:    { type: String, default: "" }, // ISO 3166-1 alpha-2
-    phone:      { type: String, default: "" },
+  },
+  { _id: false }
+);
+
+const ShippingAddressSchema = new mongoose.Schema(
+  {
+    name:    { type: String, default: "" }, // recipient full name
+    address: { type: AddressSchema, default: () => ({}) },
+    phone:   { type: String, default: "" },
   },
   { _id: false }
 );

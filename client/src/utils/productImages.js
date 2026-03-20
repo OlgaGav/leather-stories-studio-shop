@@ -3,8 +3,8 @@ export function getVariantImages(product, selection = {}) {
 
   // Find best match among variants
   const match = product.variants?.find((v) => {
-    const colorOk = colorId ? v.color === colorId : true;
-    const leatherOk = leatherId ? v.leather === leatherId : true;
+    const colorOk = colorId ? v.colorId === colorId : true;
+    const leatherOk = leatherId ? v.leatherId === leatherId : true;
     return colorOk && leatherOk;
   });
 
@@ -12,7 +12,7 @@ export function getVariantImages(product, selection = {}) {
 
   // If color selected but no exact match, try color-only match
   if (colorId) {
-    const colorOnly = product.variants?.find((v) => v.color === colorId && !v.leather);
+    const colorOnly = product.variants?.find((v) => v.colorId === colorId && !v.leatherId);
     if (colorOnly?.images?.length) return colorOnly.images;
   }
 

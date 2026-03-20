@@ -20,13 +20,14 @@ function formatMoney(amountCents, currency = "EUR") {
 }
 
 function buildShippingText(addr) {
-  if (!addr?.line1) return "  Not provided";
+  if (!addr?.address?.line1) return "  Not provided";
+  const a = addr.address;
   const lines = [
     addr.name,
-    addr.line1,
-    addr.line2,
-    [addr.city, addr.state, addr.postalCode].filter(Boolean).join(", "),
-    addr.country,
+    a.line1,
+    a.line2,
+    [a.city, a.state, a.postalCode].filter(Boolean).join(", "),
+    a.country,
     addr.phone ? `Phone: ${addr.phone}` : null,
   ].filter(Boolean);
   return lines.map((l) => `  ${l}`).join("\n");
