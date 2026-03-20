@@ -1,11 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X } from "lucide-react";
-import { useCart } from "../context/CartContext"; // adjust path if needed
+import { Menu, X, ChevronDown } from "lucide-react";
+import { useCart } from "../context/CartContext";
+
+const PRODUCTS = [
+  { label: "Nomad", slug: "nomad" },
+  { label: "Ranger", slug: "ranger" },
+  { label: "Nomad Premium", slug: "nomad-premium" },
+];
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [mobileProductsOpen, setMobileProductsOpen] = useState(false);
+
+  const dropdownRef = useRef(null);
 
   const { pathname, search } = useLocation();
   const navigate = useNavigate();
@@ -15,6 +25,8 @@ const Navbar = () => {
     (sum, i) => sum + (i.quantity || 0),
     0,
   );
+
+  const isProductsActive = pathname.startsWith("/products/");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -26,22 +38,34 @@ const Navbar = () => {
   // Close menu when route changes
   useEffect(() => {
     setMenuOpen(false);
+    setDropdownOpen(false);
   }, [pathname, search]);
 
-  // Scroll helper (works after navigation too)
+  // Close desktop dropdown on outside click
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const handler = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [dropdownOpen]);
+
   const goToSection = (id) => {
     setMenuOpen(false);
-
-    // if already on home page, just scroll
     if (pathname === "/") {
       const el = document.getElementById(id);
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
-
-    // otherwise navigate to home with query param; Index will scroll on load
     navigate(`/?section=${id}`);
   };
+
+  const navLinkClass =
+    "font-body text-lg text-primary-foreground/80 hover:text-gold-accent tracking-wide transition-colors";
+  const activeNavLinkClass = "font-body text-lg text-gold-accent tracking-wide transition-colors";
 
   return (
     <nav
@@ -75,7 +99,7 @@ const Navbar = () => {
             <button
               type="button"
               onClick={() => goToSection("story")}
-              className="font-body text-lg text-primary-foreground/80 hover:text-gold-accent tracking-wide transition-colors"
+              className={navLinkClass}
             >
               Story
             </button>
@@ -85,16 +109,54 @@ const Navbar = () => {
             <button
               type="button"
               onClick={() => goToSection("products")}
-              className="font-body text-lg text-primary-foreground/80 hover:text-gold-accent tracking-wide transition-colors"
+              className={navLinkClass}
             >
               Shop
             </button>
           </li>
 
+          {/* Products dropdown */}
+          <li className="relative" ref={dropdownRef}>
+            <button
+              type="button"
+              onClick={() => setDropdownOpen((v) => !v)}
+              className={`flex items-center gap-1 ${isProductsActive ? activeNavLinkClass : navLinkClass}`}
+              aria-expanded={dropdownOpen}
+            >
+              Products
+              <ChevronDown
+                size={16}
+                className={`transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            {dropdownOpen && (
+              <ul className="absolute top-full right-0 mt-2 w-48 bg-espresso/95 backdrop-blur-md border border-primary-foreground/10 rounded-md shadow-lg py-1 animate-fade-in">
+                {PRODUCTS.map(({ label, slug }) => {
+                  const isActive = pathname === `/products/${slug}`;
+                  return (
+                    <li key={slug}>
+                      <Link
+                        to={`/products/${slug}`}
+                        className={`block px-4 py-2.5 font-body text-sm tracking-wide transition-colors ${
+                          isActive
+                            ? "text-gold-accent"
+                            : "text-primary-foreground/80 hover:text-gold-accent hover:bg-primary-foreground/5"
+                        }`}
+                      >
+                        {label}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </li>
+
           <li>
             <Link
               to="/cart"
-              className="relative font-body text-lg text-primary-foreground/80 hover:text-gold-accent tracking-wide transition-colors"
+              className={`relative ${navLinkClass}`}
             >
               Cart
               {cartCount > 0 && (
@@ -124,7 +186,7 @@ const Navbar = () => {
               <button
                 type="button"
                 onClick={() => goToSection("story")}
-                className="font-body text-lg text-primary-foreground/80 hover:text-gold-accent tracking-wide transition-colors"
+                className={navLinkClass}
               >
                 Story
               </button>
@@ -134,16 +196,55 @@ const Navbar = () => {
               <button
                 type="button"
                 onClick={() => goToSection("products")}
-                className="font-body text-lg text-primary-foreground/80 hover:text-gold-accent tracking-wide transition-colors"
+                className={navLinkClass}
               >
                 Shop
               </button>
             </li>
 
+            {/* Mobile Products accordion */}
+            <li className="w-full px-10 text-center">
+              <button
+                type="button"
+                onClick={() => setMobileProductsOpen((v) => !v)}
+                className={`flex items-center justify-center gap-1 w-full ${isProductsActive ? activeNavLinkClass : navLinkClass}`}
+                aria-expanded={mobileProductsOpen}
+              >
+                Products
+                <ChevronDown
+                  size={16}
+                  className={`transition-transform duration-200 ${mobileProductsOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              {mobileProductsOpen && (
+                <ul className="mt-3 flex flex-col gap-3 border-t border-primary-foreground/10 pt-3">
+                  {PRODUCTS.map(({ label, slug }) => {
+                    const isActive = pathname === `/products/${slug}`;
+                    return (
+                      <li key={slug}>
+                        <Link
+                          to={`/products/${slug}`}
+                          onClick={() => setMenuOpen(false)}
+                          className={`font-body text-base tracking-wide transition-colors ${
+                            isActive
+                              ? "text-gold-accent"
+                              : "text-primary-foreground/70 hover:text-gold-accent"
+                          }`}
+                        >
+                          {label}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </li>
+
             <li>
               <Link
                 to="/cart"
-                className="relative font-body text-lg text-primary-foreground/80 hover:text-gold-accent tracking-wide transition-colors"
+                className={`relative ${navLinkClass}`}
                 onClick={() => setMenuOpen(false)}
               >
                 Cart

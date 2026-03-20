@@ -1,6 +1,33 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import PersonalizationModal from "./PersonalizationModal";
 import { findVariant, formatMoney } from "../utils/productVariant";
+
+function useCarousel(images) {
+  const [index, setIndex] = useState(0);
+  const touchStartX = useRef(null);
+
+  // Reset to first slide whenever the image set changes (variant switch)
+  useEffect(() => {
+    setIndex(0);
+  }, [images]);
+
+  const prev = () => setIndex((i) => (i - 1 + images.length) % images.length);
+  const next = () => setIndex((i) => (i + 1) % images.length);
+
+  const onTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const onTouchEnd = (e) => {
+    if (touchStartX.current === null) return;
+    const delta = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(delta) > 40) delta > 0 ? next() : prev();
+    touchStartX.current = null;
+  };
+
+  return { index, setIndex, prev, next, onTouchStart, onTouchEnd };
+}
 
 export default function ProductCard({ product, onOrderNow }) {
   const [colorId, setColorId] = useState(product.colors?.[0]?.id || "");
@@ -10,73 +37,129 @@ export default function ProductCard({ product, onOrderNow }) {
 
   const selectedColor = useMemo(
     () => (product.colors || []).find((c) => c.id === colorId),
-    [product.colors, colorId],
+    [product.colors, colorId]
   );
 
   const selectedLeather = useMemo(
     () => (product.leathers || []).find((l) => l.id === leatherId),
-    [product.leathers, leatherId],
+    [product.leathers, leatherId]
   );
 
   const variant = useMemo(
     () => findVariant(product, { colorId, leatherId }),
-    [product, colorId, leatherId],
+    [product, colorId, leatherId]
   );
 
-  const mainImage = variant?.images?.[0];
+  const images = useMemo(() => {
+    const imgs = variant?.images?.length ? variant.images : product.defaultImages;
+    return imgs || [];
+  }, [variant, product.defaultImages]);
+
+  const { index, setIndex, prev, next, onTouchStart, onTouchEnd } = useCarousel(images);
+  const multi = images.length > 1;
 
   return (
     <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
-      {/* Image */}
-      <div className="bg-[#efe7dc]">
-        <div className="aspect-[1/1] w-full">
-          {mainImage ? (
-            <img
-              src={mainImage}
-              alt={product.name}
-              className="h-full w-full object-contain p-3"
-            />
-          ) : (
-            <div className="h-full w-full" />
-          )}
-        </div>
+      {/* Image carousel */}
+      <div className="relative group bg-[#efe7dc]">
+        <Link to={`/products/${product.slug}`} className="block">
+          <div
+            className="aspect-[1/1] w-full overflow-hidden"
+            onTouchStart={multi ? onTouchStart : undefined}
+            onTouchEnd={multi ? onTouchEnd : undefined}
+          >
+            {images.length > 0 ? (
+              <img
+                key={images[index]}
+                src={images[index]}
+                alt={`${product.name} — view ${index + 1}`}
+                className="h-full w-full object-contain p-4 transition-opacity duration-300"
+              />
+            ) : (
+              <div className="h-full w-full" />
+            )}
+          </div>
+        </Link>
+
+        {/* Prev / Next arrows — outside Link, always in DOM for layout stability */}
+        {multi && (
+          <>
+            <button
+              type="button"
+              onClick={prev}
+              aria-label="Previous image"
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/70 backdrop-blur-sm shadow transition opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-white"
+            >
+              <ChevronLeft size={16} className="text-neutral-700" />
+            </button>
+            <button
+              type="button"
+              onClick={next}
+              aria-label="Next image"
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/70 backdrop-blur-sm shadow transition opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-white"
+            >
+              <ChevronRight size={16} className="text-neutral-700" />
+            </button>
+
+            {/* Dots */}
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
+              {images.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setIndex(i)}
+                  aria-label={`Go to image ${i + 1}`}
+                  className={`h-1.5 rounded-full transition-all ${
+                    i === index
+                      ? "w-4 bg-neutral-700"
+                      : "w-1.5 bg-neutral-400/70 hover:bg-neutral-500"
+                  }`}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Content */}
-      <div className="p-6">
+      <div className="p-6 md:p-8">
         {/* Title + Price */}
         <div className="flex items-start justify-between gap-6">
-          <div>
-            <h3 className="text-xl font-semibold text-neutral-800">
+          <Link to={`/products/${product.slug}`} className="min-w-0">
+            <h3 className="text-3xl font-semibold tracking-tight text-neutral-800 hover:text-[#8b4a1f]">
               {product.name}
             </h3>
-            <p className="mt-2 text-sm text-neutral-600">
-              {product.description}
-            </p>
-          </div>
+          </Link>
 
-          <div className="text-lg font-semibold text-[#b26a2a]">
-            {formatMoney(product.price, product.currency)}
+          <div className="shrink-0 text-2xl font-semibold text-[#b26a2a]">
+            {formatMoney(product.price, product.currency || "USD")}
           </div>
         </div>
 
+        {/* Description */}
+        <p className="mt-5 text-lg leading-relaxed text-neutral-600">
+          {product.description}
+        </p>
+
         {/* Color */}
-        <div className="mt-6">
-          <div className="text-s uppercase tracking-widest text-neutral-600">
+        <div className="mt-10">
+          <div className="text-[15px] uppercase tracking-[0.18em] text-neutral-600">
             Color: {selectedColor?.name || "—"}
           </div>
 
-          <div className="mt-3 flex gap-3">
+          <div className="mt-5 flex gap-4">
             {(product.colors || []).map((c) => {
               const active = c.id === colorId;
+
               return (
                 <button
                   key={c.id}
+                  type="button"
                   onClick={() => setColorId(c.id)}
-                  className={`h-9 w-9 rounded-full border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-accent ${
+                  className={`h-12 w-12 rounded-full border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-accent ${
                     active
-                      ? "border-gold-accent ring-2 ring-gold-accent/60 shadow-[0_0_10px_rgba(212,175,55,0.6),0_0_20px_rgba(212,175,55,0.3)] scale-105"
-                      : "border-border"
+                      ? "border-gold-accent ring-4 ring-gold-accent/25 scale-105 shadow-[0_0_20px_rgba(212,175,55,0.35)]"
+                      : "border-neutral-300"
                   }`}
                   style={{ backgroundColor: c.hex }}
                   aria-label={`Select color ${c.name}`}
@@ -87,21 +170,23 @@ export default function ProductCard({ product, onOrderNow }) {
           </div>
         </div>
 
-        {/* Leather (only if product has leathers) */}
-        {(product.leathers?.length || 0) > 0 && (
-          <div className="mt-6">
-            <div className="text-s uppercase tracking-widest text-neutral-600">
-              Leather: {selectedLeather?.name || "—"}
-            </div>
+        {/* Leather */}
+        <div className="mt-10">
+          <div className="text-[15px] uppercase tracking-[0.18em] text-neutral-600">
+            Leather: {selectedLeather?.name || "—"}
+          </div>
 
-            <div className="mt-3 flex flex-wrap gap-2">
+          {(product.leathers?.length || 0) > 1 && (
+            <div className="mt-5 flex flex-wrap gap-3">
               {product.leathers.map((l) => {
                 const active = l.id === leatherId;
+
                 return (
                   <button
                     key={l.id}
+                    type="button"
                     onClick={() => setLeatherId(l.id)}
-                    className={`rounded-full border px-3 py-1 text-s transition ${
+                    className={`rounded-full border px-4 py-2 text-sm transition ${
                       active
                         ? "border-neutral-900 bg-white"
                         : "border-neutral-300 bg-white/60 hover:bg-white"
@@ -113,41 +198,29 @@ export default function ProductCard({ product, onOrderNow }) {
                 );
               })}
             </div>
-          </div>
-        )}
-
-        {/* Personalization */}
-        {/* <div className="mt-6">
-          <button
-            className="text-s uppercase tracking-widest text-[#b26a2a] hover:opacity-80"
-            onClick={() => setModalOpen(true)}
-          >
-            + Add personalization
-          </button>
-
-          {personalization?.text && (
-            <div className="mt-2 text-sm text-neutral-700">
-              <span className="font-medium">Personalization:</span> “
-              {personalization.text}”{" "}
-              <span className="text-neutral-500">
-                (
-                {product.fonts?.find((f) => f.id === personalization.fontId)
-                  ?.name || personalization.fontId}
-                )
-              </span>
-            </div>
           )}
-        </div> */}
+        </div>
+
+        {/* Links */}
+        <div className="mt-8">
+          <Link
+            to={`/products/${product.slug}`}
+            className="inline-block text-sm uppercase tracking-[0.18em] text-[#b26a2a] hover:opacity-80"
+          >
+            View details
+          </Link>
+        </div>
 
         {/* Order now */}
         <button
-          className="mt-6 w-full rounded-md bg-[#8b4a1f] px-5 py-3 text-sm font-medium text-white hover:bg-[#7a401b]"
+          className="mt-8 w-full rounded-md bg-[#8b4a1f] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#7a401b]"
           onClick={() => {
             if (!colorId) {
               alert("Please select a color");
               return;
             }
-            if (product.leathers?.length && !leatherId) {
+
+            if ((product.leathers?.length || 0) > 1 && !leatherId) {
               alert("Please select leather");
               return;
             }
@@ -159,7 +232,7 @@ export default function ProductCard({ product, onOrderNow }) {
               currency: product.currency || "USD",
               colorId,
               leatherId: product.leathers?.length ? leatherId : "",
-              personalization, // {text,fontId} or null
+              personalization,
               quantity: 1,
             });
           }}
