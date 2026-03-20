@@ -12,10 +12,14 @@ const Index = () => {
     const section = params.get("section");
     if (!section) return;
 
-    requestAnimationFrame(() => {
+    // setTimeout gives the DOM time to settle after navigation
+    // before we attempt to scroll (avoids race with ScrollToTop)
+    const timer = setTimeout(() => {
       const el = document.getElementById(section);
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+    }, 50);
+
+    return () => clearTimeout(timer);
   }, [params]);
 
   return (

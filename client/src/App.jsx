@@ -4,20 +4,22 @@ import Admin from "./pages/Admin";
 import Cart from "./pages/Cart";
 import SiteLayout from "./layouts/SiteLayout";
 import Success from "./pages/Success";
+import ProductDetailsPage from "./components/ProductDetailsPage";
 import { useEffect } from "react";
 
 function ScrollToTop() {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [pathname]);
+    // When navigating to a section target, let Index handle the scroll
+    if (new URLSearchParams(search).get("section")) return;
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [pathname, search]);
 
   return null;
 }
 
 function App() {
-
   return (
     <BrowserRouter>
       <ScrollToTop />
@@ -27,13 +29,14 @@ function App() {
           <Route path="/" element={<Index />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/success" element={<Success />} />
+          <Route path="/products/:slug" element={<ProductDetailsPage />} />
         </Route>
 
         {/* Admin page */}
         <Route path="/admin" element={<Admin />} />
       </Routes>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;
