@@ -84,10 +84,25 @@ router.post("/create-session", async (req, res) => {
     }));
 
     const metadataItemsJson = JSON.stringify(compactItems);
-    if (metadataItemsJson.length > 4500) {
+
+    // Stripe limits each metadata value to 500 chars and allows up to 50 keys.
+    // Split the items JSON into 500-char chunks: items_0, items_1, ...
+    // Reserve 1 key for orderRef → max 49 chunks = 24 500 chars, far more than needed.
+    const CHUNK_SIZE = 500;
+    const MAX_CHUNKS = 49;
+    const totalChunks = Math.ceil(metadataItemsJson.length / CHUNK_SIZE);
+    if (totalChunks > MAX_CHUNKS) {
       return res.status(400).json({
         error: "Cart too large to store in metadata. Reduce items.",
       });
+    }
+
+    const itemChunks = {};
+    for (let i = 0; i < totalChunks; i++) {
+      itemChunks[`items_${i}`] = metadataItemsJson.slice(
+        i * CHUNK_SIZE,
+        (i + 1) * CHUNK_SIZE,
+      );
     }
 
     const session = await stripe.checkout.sessions.create({
@@ -111,7 +126,7 @@ router.post("/create-session", async (req, res) => {
 
       metadata: {
         orderRef,
-        items: metadataItemsJson,
+        ...itemChunks,
       },
     });
     

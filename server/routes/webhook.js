@@ -8,7 +8,20 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 function safeParseItems(session) {
   try {
-    const raw = session.metadata?.items;
+    const meta = session.metadata || {};
+
+    // Reassemble chunked format: items_0, items_1, ...
+    const chunks = [];
+    for (let i = 0; `items_${i}` in meta; i++) {
+      chunks.push(meta[`items_${i}`]);
+    }
+    if (chunks.length > 0) {
+      const parsed = JSON.parse(chunks.join(""));
+      return Array.isArray(parsed) ? parsed : [];
+    }
+
+    // Fallback: legacy single-key format
+    const raw = meta.items;
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
