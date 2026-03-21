@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { Truck } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import MediaLightbox from "../components/MediaLightbox";
@@ -364,6 +365,15 @@ export default function Cart() {
 
               <p className="mt-3 text-lg text-muted-foreground">
                 You’ll complete payment securely on Stripe.
+              </p>
+
+              <p className="mt-3 text-sm text-muted-foreground">
+                <Link
+                  to="/return-policy"
+                  className="underline underline-offset-2 hover:text-foreground transition-colors"
+                >
+                  Returns, Exchanges &amp; Warranty
+                </Link>
               </p>
 
               {!emailOk && touchedEmail ? (

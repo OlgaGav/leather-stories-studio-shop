@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 const Footer = () => {
   return (
     <footer className="bg-espresso py-14">
@@ -18,6 +20,12 @@ const Footer = () => {
             {/* <Instagram size={18} color="currentColor" weight="fill" /> */}
             @leather.stories.studio
           </a>
+          <Link
+            to="/return-policy"
+            className="text-primary-foreground/50 hover:text-primary-foreground/80 transition-colors font-body text-sm"
+          >
+            Return Policy
+          </Link>
           <div className="border-t border-primary-foreground/10 w-full pt-6 mt-2">
             <p className="text-primary-foreground/40 font-body text-xs">
               © {new Date().getFullYear()} Leather Stories Studio. All rights reserved.
