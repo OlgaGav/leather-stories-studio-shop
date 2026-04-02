@@ -155,6 +155,15 @@ const Navbar = () => {
 
           <li>
             <Link
+              to="/corporate-orders"
+              className={pathname === "/corporate-orders" ? activeNavLinkClass : navLinkClass}
+            >
+              Corporate
+            </Link>
+          </li>
+
+          <li>
+            <Link
               to="/cart"
               className={`relative ${navLinkClass}`}
             >
@@ -239,6 +248,16 @@ const Navbar = () => {
                   })}
                 </ul>
               )}
+            </li>
+
+            <li>
+              <Link
+                to="/corporate-orders"
+                className={pathname === "/corporate-orders" ? activeNavLinkClass : navLinkClass}
+                onClick={() => setMenuOpen(false)}
+              >
+                Corporate
+              </Link>
             </li>
 
             <li>

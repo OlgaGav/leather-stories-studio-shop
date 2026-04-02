@@ -6,6 +6,7 @@ import SiteLayout from "./layouts/SiteLayout";
 import Success from "./pages/Success";
 import ProductDetailsPage from "./components/ProductDetailsPage";
 import ReturnPolicy from "./pages/ReturnPolicy";
+import CorporateOrders from "./pages/CorporateOrders";
 import { useEffect } from "react";
 
 function ScrollToTop() {
@@ -32,6 +33,7 @@ function App() {
           <Route path="/success" element={<Success />} />
           <Route path="/products/:slug" element={<ProductDetailsPage />} />
           <Route path="/return-policy" element={<ReturnPolicy />} />
+          <Route path="/corporate-orders" element={<CorporateOrders />} />
         </Route>
 
         {/* Admin page */}
