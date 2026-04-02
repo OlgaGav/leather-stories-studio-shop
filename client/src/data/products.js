@@ -169,12 +169,12 @@ export const products = [
     id: "cardholder-model-3",
     slug: "nomad-premium",
     name: "Nomad Premium",
-    subtitle: "The Elevated Minimalist",
+    subtitle: "Nomad Premium — Elevated Craft",
     price: 60,
     currency: "USD",
     description:
-      "Premium minimalist cardholder crafted from Badalassi Carlo Belfagor leather in a natural tone, with hand-stitched construction and timeless character.",
-    badgeLine: "Badalassi Carlo Belfagor • Hand-Stitched • Natural Finish",
+      "The Nomad Premium cardholder is a refined expression of the original design, created for those who appreciate distinctive materials and evolving character. It maintains a minimalist form while introducing a leather that transforms with use.",
+    badgeLine: "Italian Ghost Leather • Hand-Stitched • One-of-a-Kind Patina • Built to Last",
     colors: [{ id: "natural", name: "Natural", hex: "#d8c3a5" }],
     leathers: [{ id: "belfagor", name: "Badalassi Carlo - Belfagor" }],
     defaultColorId: "natural",
@@ -182,7 +182,7 @@ export const products = [
     variants: [
       {
         colorId: "natural",
-        leatherId: "belfagor",
+        leatherId: "walpier-ghost-leather",
         images: [
           "/images/cardholder/nomad-premium-natural-1.jpg",
           "/images/cardholder/nomad-premium-natural-2.jpg",
@@ -192,28 +192,28 @@ export const products = [
     ],
     details: {
       intro:
-        "Nomad Premium takes the minimalist Nomad silhouette and pairs it with Badalassi Carlo Belfagor leather for an even more elevated feel, rich character, and refined aging.",
+        "The Nomad Premium cardholder is a refined expression of the original design, created for those who appreciate distinctive materials and evolving character. It maintains a minimalist form while introducing a leather that transforms with use.",
       features: [
         {
-          title: "Premium Italian Leather",
-          text: "Crafted from Badalassi Carlo Belfagor leather in a natural tone, selected for its rich texture, depth, and distinctive character.",
+          title: "Walpier Ghost Leather",
+          text: "Crafted from “Burro” ghost leather by the Walpier tannery (Italy) — a vegetable-tanned leather finished with a layer of white wax. Beneath this surface lies the natural color of the leather. As the wax gradually wears and can be gently rubbed away, deeper tones begin to emerge, creating a dynamic, evolving surface. Each piece develops its own pattern over time — no two cardholders will age the same.",
         },
         {
-          title: "Natural Character",
-          text: "The natural finish highlights the beauty of the leather and allows it to deepen and evolve beautifully with wear.",
+          title: "A Living Material",
+          text: "This leather is designed to change. With every use, it reveals more of its depth and character. The result is a cardholder that becomes increasingly personal — a piece that reflects how it is used and carried.",
         },
         {
-          title: "Hand-Stitched Durability",
-          text: "Each piece is assembled and hand-stitched for strength, precision, and a more artisanal finish.",
+          title: "The Superior Stitch",
+          text: "Each Nomad Premium is hand-stitched using the traditional saddle stitch method with durable Ritza Tiger waxed thread. This construction ensures long-term durability, keeping the seams secure through years of everyday use.",
         },
         {
-          title: "Minimalist Carry",
-          text: "Built for everyday use with a slim silhouette that keeps essentials close without unnecessary bulk.",
+          title: "Minimalist Form, Elevated Feel",
+          text: "Designed to hold 3–5 cards while maintaining a clean, slim silhouette. The unique surface of ghost leather adds a tactile and visual depth that sets this piece apart from standard leather goods.",
         },
       ],
       specs: {
-        material: "Badalassi Carlo Belfagor leather (Italy)",
-        stitching: "Hand-stitched construction",
+        material: "Walpier “Burro” ghost leather (Italy), vegetable-tanned",
+        stitching: "Hand-punched saddle stitch. Ritza Tiger waxed thread.",
         dimensions: '4.0" × 2.7"',
         capacity: "3–5 cards",
       },
