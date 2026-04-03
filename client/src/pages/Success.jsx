@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { formatMoneyFromCents } from "../utils/productVariant";
 import { useCart } from "../context/CartContext";
+import { calcDiscount } from "../utils/discount";
 
 const Success = () => {
   const [searchParams] = useSearchParams();
@@ -105,6 +106,12 @@ const Success = () => {
   const totalText = useMemo(() => {
     if (!order) return "";
     return formatMoneyFromCents(order.amountTotal, order.currency || "USD");
+  }, [order]);
+
+  const discountInfo = useMemo(() => {
+    if (!order?.items) return null;
+    const info = calcDiscount(order.items);
+    return info.isEligible ? info : null;
   }, [order]);
 
   // Shared layout wrappers (theme)
@@ -271,6 +278,13 @@ const Success = () => {
             .
           </p>
 
+          {discountInfo && (
+            <div className="mt-4 flex items-center gap-2 rounded-2xl bg-accent/10 border border-accent/30 px-4 py-3 text-sm font-medium text-accent">
+              <span>🎉</span>
+              <span>10% multi-wallet discount was applied to this order.</span>
+            </div>
+          )}
+
           <div className="mt-7 rounded-2xl border border-border bg-background/60 p-4">
             <div className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
               Order reference
@@ -343,9 +357,34 @@ const Success = () => {
             ))}
           </div>
 
-          <div className="mt-10 flex items-center justify-between rounded-2xl border border-border bg-background/60 px-5 py-4">
-            <div className="font-display text-lg">Total paid</div>
-            <div className="font-display text-lg text-accent">{totalText}</div>
+          <div className="mt-10 rounded-2xl border border-border bg-background/60 px-5 py-4 space-y-2">
+            {discountInfo && (
+              <>
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>Subtotal</span>
+                  <span>
+                    {formatMoneyFromCents(
+                      Math.round(discountInfo.subtotal * 100),
+                      order.currency || "USD",
+                    )}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm text-accent">
+                  <span>Discount (10%)</span>
+                  <span>
+                    −{formatMoneyFromCents(
+                      Math.round(discountInfo.discountAmount * 100),
+                      order.currency || "USD",
+                    )}
+                  </span>
+                </div>
+                <div className="border-t border-border pt-2" />
+              </>
+            )}
+            <div className="flex items-center justify-between">
+              <div className="font-display text-lg">Total paid</div>
+              <div className="font-display text-lg text-accent">{totalText}</div>
+            </div>
           </div>
 
           <div className="mt-10 flex flex-col gap-3 sm:flex-row">
