@@ -61,7 +61,7 @@ function CartShippingNotice() {
 }
 
 export default function Cart() {
-  const { items, updateQuantity, removeFromCart, clearCart, total } = useCart();
+  const { items, updateQuantity, removeFromCart, clearCart, total, discountInfo } = useCart();
 
   const [email, setEmail] = useState("");
   const [touchedEmail, setTouchedEmail] = useState(false);
@@ -374,10 +374,44 @@ export default function Cart() {
 
             {/* Total + Checkout */}
             <div className="mt-10 rounded-3xl border border-border bg-card p-7 shadow-lg">
-              <div className="flex items-center justify-between">
-                <div className="font-display text-xl">Total</div>
-                <div className="font-display text-xl text-accent">
-                  {formatMoney(total, items[0]?.currency || "USD")}
+              {/* Promo banner */}
+              {discountInfo.isEligible ? (
+                <div className="mb-5 flex items-center gap-2 rounded-2xl bg-accent/10 border border-accent/30 px-4 py-3 text-sm font-medium text-accent">
+                  <span>🎉</span>
+                  <span>10% multi-wallet discount applied</span>
+                </div>
+              ) : discountInfo.totalQty > 0 ? (
+                <div className="mb-5 flex items-center gap-2 rounded-2xl bg-muted/60 border border-border px-4 py-3 text-sm text-muted-foreground">
+                  <span>💡</span>
+                  <span>
+                    Add {discountInfo.needed} more wallet{discountInfo.needed !== 1 ? "s" : ""} to get{" "}
+                    <strong className="text-foreground">10% off</strong> your order.
+                  </span>
+                </div>
+              ) : null}
+
+              {/* Totals breakdown */}
+              <div className="space-y-2">
+                {discountInfo.isEligible && (
+                  <div className="flex items-center justify-between text-base text-muted-foreground">
+                    <span>Subtotal</span>
+                    <span>{formatMoney(discountInfo.subtotal, items[0]?.currency || "USD")}</span>
+                  </div>
+                )}
+                {discountInfo.isEligible && (
+                  <div className="flex items-center justify-between text-base text-accent">
+                    <span>Discount (10%)</span>
+                    <span>−{formatMoney(discountInfo.discountAmount, items[0]?.currency || "USD")}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between pt-2 border-t border-border">
+                  <div className="font-display text-xl">Total</div>
+                  <div className="font-display text-xl text-accent">
+                    {formatMoney(
+                      discountInfo.isEligible ? discountInfo.discountedTotal : total,
+                      items[0]?.currency || "USD",
+                    )}
+                  </div>
                 </div>
               </div>
 

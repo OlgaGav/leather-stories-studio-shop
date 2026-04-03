@@ -23,6 +23,12 @@ export default function Products() {
         </div>
       </div>
 
+      {/* Multi-wallet promo */}
+      <div className="mt-6 flex items-center gap-2 rounded-2xl bg-accent/10 border border-accent/25 px-5 py-3 text-sm font-medium text-accent w-fit">
+        <span>🎁</span>
+        <span>Buy 2 or more wallets and get <strong>10% off</strong> your order.</span>
+      </div>
+
       <div className="mt-8 grid gap-6 md:grid-cols-2">
         {products.map((p) => (
           <ProductCard key={p.id} product={p} onOrderNow={orderNow} />

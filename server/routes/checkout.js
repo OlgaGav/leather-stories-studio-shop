@@ -71,6 +71,29 @@ router.post("/create-session", async (req, res) => {
       },
     }));
 
+    // Multi-wallet discount: 10% off when total wallet quantity >= 2.
+    // Enforced server-side as a negative line item so Stripe reflects the
+    // actual charged amount and it cannot be bypassed by the frontend.
+    const DISCOUNT_RATE = 0.10;
+    const DISCOUNT_MIN_QTY = 2;
+    const totalQty = normalizedItems.reduce((sum, i) => sum + i.quantity, 0);
+    if (totalQty >= DISCOUNT_MIN_QTY) {
+      const subtotalCents = normalizedItems.reduce(
+        (sum, i) => sum + Math.round(i.price * 100) * i.quantity,
+        0,
+      );
+      const discountCents = Math.round(subtotalCents * DISCOUNT_RATE);
+      const currency = normalizedItems[0].currency.toLowerCase();
+      line_items.push({
+        quantity: 1,
+        price_data: {
+          currency,
+          unit_amount: -discountCents,
+          product_data: { name: "Multi-wallet discount (10%)" },
+        },
+      });
+    }
+
     const compactItems = normalizedItems.map((i) => ({
       productId: i.productId,
       name: i.name,
