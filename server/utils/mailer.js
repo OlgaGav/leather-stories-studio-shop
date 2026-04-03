@@ -10,6 +10,17 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+const DISCOUNT_RATE = 0.10;
+const DISCOUNT_MIN_QTY = 2;
+
+function calcDiscount(items = []) {
+  const totalQty = items.reduce((sum, i) => sum + (i.quantity || 0), 0);
+  const subtotal = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const isEligible = totalQty >= DISCOUNT_MIN_QTY;
+  const discountAmount = isEligible ? subtotal * DISCOUNT_RATE : 0;
+  return { isEligible, subtotal, discountAmount };
+}
+
 function formatMoney(amountCents, currency = "EUR") {
   const amount = (amountCents || 0) / 100;
   const symbol =
@@ -113,6 +124,9 @@ function buildCustomerHtml(order) {
   const totalPaid = formatMoney(order.amountTotal, order.currency);
   const itemsHtml = buildItemsHtml(order.items);
   const shippingHtml = buildShippingHtml(order.shippingAddress);
+  const { isEligible, subtotal, discountAmount } = calcDiscount(order.items);
+  const subtotalText = formatMoney(Math.round(subtotal * 100), order.currency);
+  const discountText = formatMoney(Math.round(discountAmount * 100), order.currency);
 
   const notesSection = order.orderNotes
     ? `<!-- Order Notes -->
@@ -163,7 +177,20 @@ function buildCustomerHtml(order) {
               <!-- Order Summary -->
               <p style="margin:0 0 12px;font-size:16px;font-weight:bold;border-bottom:2px solid #2c1a0e;padding-bottom:6px;">Order Summary</p>
               ${itemsHtml}
-              <p style="margin:16px 0 28px;font-size:15px;font-weight:bold;">
+              ${isEligible ? `
+              <table style="border-collapse:collapse;width:100%;margin:12px 0 4px;">
+                <tr>
+                  <td style="font-size:14px;color:#666;padding:3px 0;">Subtotal</td>
+                  <td style="font-size:14px;color:#222;text-align:right;">${subtotalText}</td>
+                </tr>
+                <tr>
+                  <td style="font-size:14px;color:#b47c3b;padding:3px 0;">Discount (10% multi-wallet)</td>
+                  <td style="font-size:14px;color:#b47c3b;text-align:right;">−${discountText}</td>
+                </tr>
+              </table>
+              <div style="border-top:1px solid #e8e0d8;margin:6px 0 4px;"></div>
+              ` : ""}
+              <p style="margin:8px 0 28px;font-size:15px;font-weight:bold;">
                 Total Paid: ${totalPaid}
               </p>
 
@@ -226,6 +253,9 @@ function buildCustomerText(order) {
   const totalPaid = formatMoney(order.amountTotal, order.currency);
   const itemsText = buildItemsText(order.items);
   const shippingText = buildShippingText(order.shippingAddress);
+  const { isEligible, subtotal, discountAmount } = calcDiscount(order.items);
+  const subtotalText = formatMoney(Math.round(subtotal * 100), order.currency);
+  const discountText = formatMoney(Math.round(discountAmount * 100), order.currency);
 
   const notesSection = order.orderNotes
     ? `------------------------------------------------------------
@@ -250,7 +280,10 @@ Order Summary
 ------------------------------------------------------------
 
 ${itemsText}
-
+${isEligible ? `
+Subtotal:                    ${subtotalText}
+Discount (10% multi-wallet): −${discountText}
+` : ""}
 Total Paid: ${totalPaid}
 
 ------------------------------------------------------------
@@ -283,6 +316,9 @@ function buildOwnerHtml(order) {
   const totalPaid = formatMoney(order.amountTotal, order.currency);
   const itemsHtml = buildItemsHtml(order.items);
   const shippingHtml = buildShippingHtml(order.shippingAddress);
+  const { isEligible, subtotal, discountAmount } = calcDiscount(order.items);
+  const subtotalText = formatMoney(Math.round(subtotal * 100), order.currency);
+  const discountText = formatMoney(Math.round(discountAmount * 100), order.currency);
 
   const notesSection = order.orderNotes
     ? `<!-- Customer Notes — highlighted -->
@@ -329,8 +365,9 @@ function buildOwnerHtml(order) {
                     <p style="margin:2px 0 0;font-size:15px;font-weight:bold;color:#222;">${order.customerEmail}</p>
                   </td>
                   <td style="text-align:right;">
-                    <p style="margin:0;font-size:13px;color:#888;">Total</p>
+                    <p style="margin:0;font-size:13px;color:#888;">Total${isEligible ? " (10% off)" : ""}</p>
                     <p style="margin:2px 0 0;font-size:20px;font-weight:bold;color:#2c1a0e;">${totalPaid}</p>
+                    ${isEligible ? `<p style="margin:2px 0 0;font-size:11px;color:#b47c3b;">−${discountText} discount applied</p>` : ""}
                   </td>
                 </tr>
               </table>
@@ -344,7 +381,20 @@ function buildOwnerHtml(order) {
             <td style="padding:28px 36px 0;">
               <p style="margin:0 0 12px;font-size:16px;font-weight:bold;border-bottom:2px solid #2c1a0e;padding-bottom:6px;color:#2c1a0e;">Order Items</p>
               ${itemsHtml}
-              <p style="margin:16px 0 28px;font-size:15px;font-weight:bold;color:#222;">
+              ${isEligible ? `
+              <table style="border-collapse:collapse;width:100%;margin:12px 0 4px;">
+                <tr>
+                  <td style="font-size:14px;color:#666;padding:3px 0;">Subtotal</td>
+                  <td style="font-size:14px;color:#222;text-align:right;">${subtotalText}</td>
+                </tr>
+                <tr>
+                  <td style="font-size:14px;color:#b47c3b;padding:3px 0;font-weight:bold;">Discount (10% multi-wallet)</td>
+                  <td style="font-size:14px;color:#b47c3b;text-align:right;font-weight:bold;">−${discountText}</td>
+                </tr>
+              </table>
+              <div style="border-top:1px solid #e8e0d8;margin:6px 0 4px;"></div>
+              ` : ""}
+              <p style="margin:8px 0 28px;font-size:15px;font-weight:bold;color:#222;">
                 Total Paid: ${totalPaid}
               </p>
             </td>
@@ -390,6 +440,9 @@ function buildOwnerText(order) {
   const totalPaid = formatMoney(order.amountTotal, order.currency);
   const itemsText = buildItemsText(order.items);
   const shippingText = buildShippingText(order.shippingAddress);
+  const { isEligible, subtotal, discountAmount } = calcDiscount(order.items);
+  const subtotalText = formatMoney(Math.round(subtotal * 100), order.currency);
+  const discountText = formatMoney(Math.round(discountAmount * 100), order.currency);
 
   const notesSection = order.orderNotes
     ? `============================================================
@@ -405,14 +458,17 @@ ${order.orderNotes}
 ============================================================
 
 Customer Email: ${order.customerEmail}
-Total: ${totalPaid}
+Total: ${totalPaid}${isEligible ? ` (incl. 10% multi-wallet discount of −${discountText})` : ""}
 
 ${notesSection}------------------------------------------------------------
 Order Items
 ------------------------------------------------------------
 
 ${itemsText}
-
+${isEligible ? `
+Subtotal:                    ${subtotalText}
+Discount (10% multi-wallet): −${discountText}
+` : ""}
 Total Paid: ${totalPaid}
 
 ------------------------------------------------------------
