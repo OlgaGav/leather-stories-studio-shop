@@ -51,13 +51,22 @@ router.post("/create-session", async (req, res) => {
 
     const orderRef = crypto.randomUUID();
 
+    // Multi-wallet discount: 10% off when total wallet quantity >= 2.
+    // Enforced server-side by reducing each item's unit_amount.
+    // Stripe Checkout does not support negative unit_amount in price_data.
+    const DISCOUNT_RATE = 0.10;
+    const DISCOUNT_MIN_QTY = 2;
+    const totalQty = normalizedItems.reduce((sum, i) => sum + i.quantity, 0);
+    const applyDiscount = totalQty >= DISCOUNT_MIN_QTY;
+    const priceMultiplier = applyDiscount ? (1 - DISCOUNT_RATE) : 1;
+
     const line_items = normalizedItems.map((item) => ({
       quantity: item.quantity,
       price_data: {
         currency: item.currency.toLowerCase(),
-        unit_amount: Math.round(item.price * 100),
+        unit_amount: Math.round(item.price * 100 * priceMultiplier),
         product_data: {
-          name: item.name,
+          name: applyDiscount ? `${item.name} (10% off)` : item.name,
           description: [
             `Color: ${item.colorId}`,
             item.leatherId ? `Leather: ${item.leatherId}` : null,
@@ -70,29 +79,6 @@ router.post("/create-session", async (req, res) => {
         },
       },
     }));
-
-    // Multi-wallet discount: 10% off when total wallet quantity >= 2.
-    // Enforced server-side as a negative line item so Stripe reflects the
-    // actual charged amount and it cannot be bypassed by the frontend.
-    const DISCOUNT_RATE = 0.10;
-    const DISCOUNT_MIN_QTY = 2;
-    const totalQty = normalizedItems.reduce((sum, i) => sum + i.quantity, 0);
-    if (totalQty >= DISCOUNT_MIN_QTY) {
-      const subtotalCents = normalizedItems.reduce(
-        (sum, i) => sum + Math.round(i.price * 100) * i.quantity,
-        0,
-      );
-      const discountCents = Math.round(subtotalCents * DISCOUNT_RATE);
-      const currency = normalizedItems[0].currency.toLowerCase();
-      line_items.push({
-        quantity: 1,
-        price_data: {
-          currency,
-          unit_amount: -discountCents,
-          product_data: { name: "Multi-wallet discount (10%)" },
-        },
-      });
-    }
 
     const compactItems = normalizedItems.map((i) => ({
       productId: i.productId,
