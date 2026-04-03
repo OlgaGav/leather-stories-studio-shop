@@ -32,7 +32,7 @@ function validateItem(item) {
 
 router.post("/create-session", async (req, res) => {
   try {
-    const { items, customerEmail } = req.body;
+    const { items, customerEmail, orderNotes } = req.body;
 
     if (!process.env.CLIENT_URL) {
       return res.status(500).json({ error: "CLIENT_URL is missing in env" });
@@ -127,6 +127,7 @@ router.post("/create-session", async (req, res) => {
       metadata: {
         orderRef,
         ...itemChunks,
+        ...(orderNotes ? { orderNotes: String(orderNotes).slice(0, 500) } : {}),
       },
     });
     

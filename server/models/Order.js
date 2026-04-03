@@ -49,6 +49,7 @@ const OrderSchema = new mongoose.Schema(
 
     customerEmail: { type: String, default: "" },
     paymentStatus: { type: String, default: "unpaid" },
+    orderNotes: { type: String, default: "" },
 
     shippingAddress: { type: ShippingAddressSchema, default: null },
   },

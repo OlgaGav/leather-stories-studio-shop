@@ -58,14 +58,13 @@ function buildShippingHtml(addr) {
 function buildItemsText(items = []) {
   return items
     .map((item, index) => {
-      const personalization = item.personalizationText
-        ? `   Personalization: ${item.personalizationText}${item.personalizationFont ? ` (${formatLabel(item.personalizationFont)})` : ""}\n`
-        : "";
       return [
         `${index + 1}. ${item.name || formatLabel(item.productId)}`,
         `   Color: ${formatLabel(item.colorId)}`,
         item.leatherId ? `   Leather: ${formatLabel(item.leatherId)}` : null,
-        personalization.trim() ? `   Personalization: ${item.personalizationText}${item.personalizationFont ? ` (${formatLabel(item.personalizationFont)})` : ""}` : null,
+        item.personalizationText
+          ? `   Personalization: ${item.personalizationText}${item.personalizationFont ? ` (${formatLabel(item.personalizationFont)})` : ""}`
+          : null,
         `   Quantity: ${item.quantity}`,
         `   Price: ${formatMoney(item.price * 100, item.currency)} each`,
         `   Subtotal: ${formatMoney(item.price * item.quantity * 100, item.currency)}`,
@@ -106,12 +105,22 @@ function buildItemsHtml(items = []) {
     .join("");
 }
 
+// ── Customer email ────────────────────────────────────────────────────────────
+
 function buildCustomerHtml(order) {
   const customerName = order.shippingAddress?.name || "Valued Customer";
   const orderRef = order.orderRef || order.stripeSessionId;
   const totalPaid = formatMoney(order.amountTotal, order.currency);
   const itemsHtml = buildItemsHtml(order.items);
   const shippingHtml = buildShippingHtml(order.shippingAddress);
+
+  const notesSection = order.orderNotes
+    ? `<!-- Order Notes -->
+      <p style="margin:0 0 12px;font-size:16px;font-weight:bold;border-bottom:2px solid #2c1a0e;padding-bottom:6px;">Your Order Notes</p>
+      <div style="background:#fdf8f3;border-left:3px solid #b47c3b;padding:12px 16px;font-size:14px;line-height:1.7;color:#444;margin-bottom:28px;border-radius:0 4px 4px 0;">
+        ${order.orderNotes}
+      </div>`
+    : "";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -163,6 +172,8 @@ function buildCustomerHtml(order) {
               <div style="font-size:14px;line-height:1.8;color:#333;margin-bottom:28px;">
                 ${shippingHtml}
               </div>
+
+              ${notesSection}
 
               <!-- Next steps -->
               <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#333;">
@@ -216,6 +227,16 @@ function buildCustomerText(order) {
   const itemsText = buildItemsText(order.items);
   const shippingText = buildShippingText(order.shippingAddress);
 
+  const notesSection = order.orderNotes
+    ? `------------------------------------------------------------
+Your Order Notes
+------------------------------------------------------------
+
+${order.orderNotes}
+
+`
+    : "";
+
   return `Hello ${customerName},
 
 Thank you for your order and for supporting Leather Stories Studio.
@@ -238,7 +259,7 @@ Shipping Details
 
 ${shippingText}
 
-We will begin crafting or preparing your order shortly. You will receive another email as soon as your order has shipped.
+${notesSection}We will begin crafting or preparing your order shortly. You will receive another email as soon as your order has shipped.
 
 Because each piece is made from natural vegetable-tanned leather, slight variations in tone, grain, and character are part of what makes every item unique.
 
@@ -255,14 +276,164 @@ order@leather-stories-studio.com
 `;
 }
 
-const sendEmail = async (order) => {
+// ── Owner email ───────────────────────────────────────────────────────────────
+
+function buildOwnerHtml(order) {
+  const orderRef = order.orderRef || "—";
+  const totalPaid = formatMoney(order.amountTotal, order.currency);
+  const itemsHtml = buildItemsHtml(order.items);
+  const shippingHtml = buildShippingHtml(order.shippingAddress);
+
+  const notesSection = order.orderNotes
+    ? `<!-- Customer Notes — highlighted -->
+          <tr>
+            <td style="padding:0 36px 28px;">
+              <p style="margin:0 0 10px;font-size:16px;font-weight:bold;border-bottom:2px solid #b47c3b;padding-bottom:6px;color:#2c1a0e;">
+                ⚠️ Customer Order Notes
+              </p>
+              <div style="background:#fff8ed;border:1px solid #e8c97a;border-left:4px solid #b47c3b;padding:14px 18px;font-size:15px;line-height:1.7;color:#333;border-radius:0 6px 6px 0;">
+                ${order.orderNotes}
+              </div>
+            </td>
+          </tr>`
+    : "";
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Order</title>
+</head>
+<body style="margin:0;padding:0;background:#f5f0ea;font-family:Arial,sans-serif;color:#222;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0ea;padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table width="620" cellpadding="0" cellspacing="0" style="max-width:620px;width:100%;background:#ffffff;border:1px solid #ddd5c8;border-radius:4px;overflow:hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:#2c1a0e;padding:24px 36px;">
+              <p style="margin:0;font-size:20px;color:#f5efe8;font-family:Georgia,serif;letter-spacing:0.04em;">Leather Stories Studio</p>
+              <p style="margin:4px 0 0;font-size:12px;color:#c9b99a;letter-spacing:0.1em;">NEW ORDER RECEIVED</p>
+            </td>
+          </tr>
+
+          <!-- Customer + Amount banner -->
+          <tr>
+            <td style="background:#fdf8f3;padding:18px 36px;border-bottom:1px solid #e8e0d8;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td>
+                    <p style="margin:0;font-size:13px;color:#888;">Customer</p>
+                    <p style="margin:2px 0 0;font-size:15px;font-weight:bold;color:#222;">${order.customerEmail}</p>
+                  </td>
+                  <td style="text-align:right;">
+                    <p style="margin:0;font-size:13px;color:#888;">Total</p>
+                    <p style="margin:2px 0 0;font-size:20px;font-weight:bold;color:#2c1a0e;">${totalPaid}</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          ${notesSection}
+
+          <!-- Order Items -->
+          <tr>
+            <td style="padding:28px 36px 0;">
+              <p style="margin:0 0 12px;font-size:16px;font-weight:bold;border-bottom:2px solid #2c1a0e;padding-bottom:6px;color:#2c1a0e;">Order Items</p>
+              ${itemsHtml}
+              <p style="margin:16px 0 28px;font-size:15px;font-weight:bold;color:#222;">
+                Total Paid: ${totalPaid}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Shipping Address -->
+          <tr>
+            <td style="padding:0 36px 28px;">
+              <p style="margin:0 0 12px;font-size:16px;font-weight:bold;border-bottom:2px solid #2c1a0e;padding-bottom:6px;color:#2c1a0e;">Ship To</p>
+              <div style="font-size:14px;line-height:1.9;color:#333;">
+                ${shippingHtml}
+              </div>
+            </td>
+          </tr>
+
+          <!-- Debug / Reference -->
+          <tr>
+            <td style="background:#f5f0ea;padding:18px 36px;border-top:1px solid #e8e0d8;">
+              <p style="margin:0 0 8px;font-size:12px;font-weight:bold;color:#888;letter-spacing:0.08em;text-transform:uppercase;">Reference &amp; Debug</p>
+              <table cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                <tr>
+                  <td style="font-size:12px;color:#999;padding-right:12px;white-space:nowrap;padding-bottom:4px;">Order Ref</td>
+                  <td style="font-size:12px;color:#555;font-family:monospace;padding-bottom:4px;">${orderRef}</td>
+                </tr>
+                <tr>
+                  <td style="font-size:12px;color:#999;padding-right:12px;white-space:nowrap;">Stripe Session</td>
+                  <td style="font-size:12px;color:#555;font-family:monospace;">${order.stripeSessionId}</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+function buildOwnerText(order) {
+  const orderRef = order.orderRef || "—";
+  const totalPaid = formatMoney(order.amountTotal, order.currency);
   const itemsText = buildItemsText(order.items);
-  const totalText = formatMoney(order.amountTotal, order.currency);
   const shippingText = buildShippingText(order.shippingAddress);
 
-  // ----------------------
-  // Customer email
-  // ----------------------
+  const notesSection = order.orderNotes
+    ? `============================================================
+!! CUSTOMER ORDER NOTES !!
+============================================================
+
+${order.orderNotes}
+
+`
+    : "";
+
+  return `NEW ORDER RECEIVED — Leather Stories Studio
+============================================================
+
+Customer Email: ${order.customerEmail}
+Total: ${totalPaid}
+
+${notesSection}------------------------------------------------------------
+Order Items
+------------------------------------------------------------
+
+${itemsText}
+
+Total Paid: ${totalPaid}
+
+------------------------------------------------------------
+Ship To
+------------------------------------------------------------
+
+${shippingText}
+
+------------------------------------------------------------
+Reference & Debug
+------------------------------------------------------------
+
+Order Ref:      ${orderRef}
+Stripe Session: ${order.stripeSessionId}
+`;
+}
+
+// ── Sender ────────────────────────────────────────────────────────────────────
+
+const sendEmail = async (order) => {
+  // Customer confirmation email
   await transporter.sendMail({
     from: process.env.EMAIL_USER,
     to: order.customerEmail,
@@ -271,31 +442,13 @@ const sendEmail = async (order) => {
     html: buildCustomerHtml(order),
   });
 
-  // ----------------------
-  // Owner email
-  // ----------------------
+  // Owner notification email
   await transporter.sendMail({
     from: process.env.EMAIL_USER,
     to: process.env.OWNER_EMAIL,
-    subject: `New Order Received (${order.orderRef || order.stripeSessionId})`,
-    text: `
-New order received!
-
-Stripe Session ID: ${order.stripeSessionId}
-Order Ref: ${order.orderRef}
-Customer Email: ${order.customerEmail}
-
-Items:
-${itemsText}
-
-Total: ${totalText}
-
-Shipping Address:
-${shippingText}
-
-Full Order Object:
-${JSON.stringify(order, null, 2)}
-`,
+    subject: `New Order — ${formatMoney(order.amountTotal, order.currency)} (${order.orderRef || order.stripeSessionId})`,
+    text: buildOwnerText(order),
+    html: buildOwnerHtml(order),
   });
 };
 
