@@ -65,6 +65,7 @@ export default function Cart() {
 
   const [email, setEmail] = useState("");
   const [touchedEmail, setTouchedEmail] = useState(false);
+  const [orderNotes, setOrderNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [lightbox, setLightbox] = useState(null); // null | { items, productName, productSlug }
 
@@ -91,6 +92,7 @@ export default function Cart() {
           quantity: parseInt(i.quantity, 10) || 1,
         })),
         customerEmail: email.trim(),
+        orderNotes: orderNotes.trim() || undefined,
       };
 
       const res = await fetch(
@@ -193,6 +195,34 @@ export default function Cart() {
                   </div>
                 ) : null}
               </div>
+            </div>
+
+            {/* Order Notes (optional) */}
+            <div className="mt-6 rounded-3xl border border-border bg-card p-6 shadow-lg">
+              <label
+                htmlFor="order-notes"
+                className="block font-display text-xl"
+              >
+                Any comments for your order?
+              </label>
+              <p className="mt-2 text-lg text-muted-foreground">
+                You can leave notes about packaging, delivery preferences, or
+                other special requests.
+              </p>
+              <textarea
+                id="order-notes"
+                className="mt-4 w-full rounded-2xl border border-border bg-background px-4 py-3 text-lg outline-none transition focus:border-accent resize-none"
+                rows={3}
+                placeholder="Example: gift packaging, please ship as soon as possible, or other notes"
+                value={orderNotes}
+                onChange={(e) => setOrderNotes(e.target.value)}
+                maxLength={500}
+              />
+              {orderNotes.length > 0 && (
+                <p className="mt-1 text-right text-sm text-muted-foreground">
+                  {orderNotes.length}/500
+                </p>
+              )}
             </div>
 
             <div className="mt-10 space-y-4">

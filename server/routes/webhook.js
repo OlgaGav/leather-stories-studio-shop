@@ -135,6 +135,7 @@ const stripeWebhook = (app) => {
             customerEmail: session.customer_email,
             paymentStatus: "paid",
             shippingAddress,
+            orderNotes: session.metadata?.orderNotes || "",
           });
 
           console.log("✅ Order saved:", order._id, "session:", session.id);
