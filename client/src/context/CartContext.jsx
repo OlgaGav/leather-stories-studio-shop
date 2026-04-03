@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { calcDiscount } from "../utils/discount";
 
 const CartContext = createContext();
 const STORAGE_KEY = "leather_cart_v1";
@@ -93,6 +94,8 @@ export function CartProvider({ children }) {
     return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   }, [items]);
 
+  const discountInfo = useMemo(() => calcDiscount(items), [items]);
+
   return (
     <CartContext.Provider
       value={{
@@ -102,6 +105,7 @@ export function CartProvider({ children }) {
         removeFromCart,
         clearCart,
         total,
+        discountInfo,
       }}
     >
       {children}

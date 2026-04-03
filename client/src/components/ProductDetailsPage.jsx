@@ -258,6 +258,12 @@ function ProductDetailsContent({ product }) {
             {formatMoney(product.price, product.currency)}
           </div>
 
+          {/* Multi-wallet promo note */}
+          <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-800">
+            <span>🎁</span>
+            <span>Buy 2+ wallets — get 10% off</span>
+          </div>
+
           <p className="mt-6 text-lg leading-relaxed text-neutral-700">
             {product.details?.intro}
           </p>
