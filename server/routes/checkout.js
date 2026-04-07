@@ -6,6 +6,18 @@ import { ALLOWED_SHIPPING_COUNTRIES } from "../config/shipping.js";
 const router = express.Router();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+// Stripe tax code mapping by product category.
+// Add entries here as new product categories are introduced.
+// txcd_99999999 = General - Tangible Goods
+const TAX_CODES = {
+  wallet: "txcd_99999999",
+};
+
+// Returns the Stripe tax code for a cart item, or undefined if not mapped.
+function getTaxCode(item) {
+  return TAX_CODES[item?.category] ?? TAX_CODES.wallet;
+}
+
 function normalizeItem(raw) {
   const price = Number(raw?.price);
   const quantity = Number(raw?.quantity);
@@ -76,6 +88,7 @@ router.post("/create-session", async (req, res) => {
           ]
             .filter(Boolean)
             .join(" | "),
+          tax_code: getTaxCode(item),
         },
       },
     }));

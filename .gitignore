@@ -29,5 +29,11 @@ server/pnpm-lock.yaml
 # IDE
 .vscode
 .idea
+
+# ===== AI =====
 CLAUDE.md
 description.md
+.agents/*
+.claude/*
+.junie/*
+skills-lock.json
