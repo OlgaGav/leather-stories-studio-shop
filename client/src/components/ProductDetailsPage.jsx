@@ -146,7 +146,7 @@ function ProductDetailsContent({ product }) {
   return (
     <section className="mx-auto max-w-6xl px-6 pt-24 pb-12 md:px-8 md:pt-28">
       <Link
-        to="/#products"
+        to="/?section=products"
         className="inline-flex items-center gap-2 text-sm uppercase tracking-[0.2em] text-[#a35a22] hover:opacity-80"
       >
         ← Back to Shop
@@ -159,7 +159,7 @@ function ProductDetailsContent({ product }) {
           </li>
           <li>/</li>
           <li>
-            <Link to="/#products" className="hover:text-[#8b4a1f]">Shop</Link>
+            <Link to="/?section=products" className="hover:text-[#8b4a1f]">Shop</Link>
           </li>
           <li>/</li>
           <li className="text-neutral-800">{product.name}</li>
