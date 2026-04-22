@@ -3,6 +3,7 @@ import { useSearchParams, Link } from "react-router-dom";
 import { formatMoneyFromCents } from "../utils/productVariant";
 import { useCart } from "../context/CartContext";
 import { calcDiscount } from "../utils/discount";
+import { getColorName, getLeatherName } from "../utils/catalog";
 
 const Success = () => {
   const [searchParams] = useSearchParams();
@@ -310,12 +311,12 @@ const Success = () => {
 
                     <div className="mt-1 text-sm text-muted-foreground">
                       Color:{" "}
-                      <span className="text-foreground">{item.colorId}</span>
+                      <span className="text-foreground">{getColorName(item.productId, item.colorId)}</span>
                       {item.leatherId ? (
                         <>
                           {" "}
                           • Leather:{" "}
-                          <span className="text-foreground">{item.leatherId}</span>
+                          <span className="text-foreground">{getLeatherName(item.productId, item.leatherId)}</span>
                         </>
                       ) : null}
                     </div>
@@ -378,8 +379,16 @@ const Success = () => {
                     )}
                   </span>
                 </div>
-                <div className="border-t border-border pt-2" />
               </>
+            )}
+            {order.amountTax > 0 && (
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>Tax</span>
+                <span>{formatMoneyFromCents(order.amountTax, order.currency || "USD")}</span>
+              </div>
+            )}
+            {(discountInfo || order.amountTax > 0) && (
+              <div className="border-t border-border pt-2" />
             )}
             <div className="flex items-center justify-between">
               <div className="font-display text-lg">Total paid</div>

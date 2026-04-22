@@ -174,7 +174,8 @@ export const products = [
     currency: "USD",
     description:
       "The Nomad Premium cardholder is a refined expression of the original design, created for those who appreciate distinctive materials and evolving character. It maintains a minimalist form while introducing a leather that transforms with use.",
-    badgeLine: "Italian Ghost Leather • Hand-Stitched • One-of-a-Kind Patina • Built to Last",
+    badgeLine:
+      "Italian Ghost Leather • Hand-Stitched • One-of-a-Kind Patina • Built to Last",
     colors: [{ id: "natural", name: "Natural", hex: "#d8c3a5" }],
     leathers: [{ id: "belfagor", name: "Badalassi Carlo - Belfagor" }],
     defaultColorId: "natural",

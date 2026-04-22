@@ -131,6 +131,7 @@ const stripeWebhook = (app) => {
             orderRef: session.metadata?.orderRef || "",
             items: orderItems,
             amountTotal: session.amount_total,
+            amountTax: session.total_details?.amount_tax || 0,
             currency: (session.currency || "eur").toUpperCase(),
             customerEmail: session.customer_email,
             paymentStatus: "paid",
