@@ -177,7 +177,7 @@ export const products = [
     badgeLine:
       "Italian Ghost Leather • Hand-Stitched • One-of-a-Kind Patina • Built to Last",
     colors: [{ id: "natural", name: "Natural", hex: "#d8c3a5" }],
-    leathers: [{ id: "belfagor", name: "Badalassi Carlo - Belfagor" }],
+    leathers: [{ id: "walpier-ghost-leather", name: "Walpier Ghost Leather" }],
     defaultColorId: "natural",
     defaultImages: ["/images/cardholder/nomad-premium-natural-1.jpg"],
     variants: [
