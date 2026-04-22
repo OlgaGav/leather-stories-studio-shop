@@ -40,7 +40,6 @@ const PRODUCT_LABELS = {
   natural: "Natural",
   // leathers
   pueblo: "Pueblo Leather",
-  belfagor: "Badalassi Carlo - Belfagor",
   "walpier-ghost-leather": "Walpier Ghost Leather",
 };
 
