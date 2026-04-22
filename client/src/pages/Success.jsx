@@ -397,7 +397,7 @@ const Success = () => {
           </div>
 
           <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-            <PrimaryLink to="/">Back to shop</PrimaryLink>
+            <PrimaryLink to="/?section=products">Back to shop</PrimaryLink>
             <SecondaryLink to="/cart">View cart</SecondaryLink>
           </div>
         </Card>
