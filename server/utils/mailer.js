@@ -30,8 +30,23 @@ function formatMoney(amountCents, currency = "EUR") {
   return `${symbol}${amount.toFixed(2)}`;
 }
 
+const PRODUCT_LABELS = {
+  // colors
+  "olive-grey-embossed": "Olive Grey Embossed",
+  "olive-grey": "Olive Grey",
+  "red-embossed": "Red Embossed",
+  red: "Red",
+  black: "Black",
+  natural: "Natural",
+  // leathers
+  pueblo: "Pueblo Leather",
+  belfagor: "Badalassi Carlo - Belfagor",
+  "walpier-ghost-leather": "Walpier Ghost Leather",
+};
+
 function formatLabel(slug) {
   if (!slug) return "-";
+  if (PRODUCT_LABELS[slug]) return PRODUCT_LABELS[slug];
   return slug
     .split("-")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -127,6 +142,8 @@ function buildCustomerHtml(order) {
   const { isEligible, subtotal, discountAmount } = calcDiscount(order.items);
   const subtotalText = formatMoney(Math.round(subtotal * 100), order.currency);
   const discountText = formatMoney(Math.round(discountAmount * 100), order.currency);
+  const amountTax = order.amountTax || 0;
+  const taxText = formatMoney(amountTax, order.currency);
 
   const notesSection = order.orderNotes
     ? `<!-- Order Notes -->
@@ -177,8 +194,9 @@ function buildCustomerHtml(order) {
               <!-- Order Summary -->
               <p style="margin:0 0 12px;font-size:16px;font-weight:bold;border-bottom:2px solid #2c1a0e;padding-bottom:6px;">Order Summary</p>
               ${itemsHtml}
-              ${isEligible ? `
+              ${isEligible || amountTax > 0 ? `
               <table style="border-collapse:collapse;width:100%;margin:12px 0 4px;">
+                ${isEligible ? `
                 <tr>
                   <td style="font-size:14px;color:#666;padding:3px 0;">Subtotal</td>
                   <td style="font-size:14px;color:#222;text-align:right;">${subtotalText}</td>
@@ -186,7 +204,12 @@ function buildCustomerHtml(order) {
                 <tr>
                   <td style="font-size:14px;color:#b47c3b;padding:3px 0;">Discount (10% multi-wallet)</td>
                   <td style="font-size:14px;color:#b47c3b;text-align:right;">−${discountText}</td>
-                </tr>
+                </tr>` : ""}
+                ${amountTax > 0 ? `
+                <tr>
+                  <td style="font-size:14px;color:#666;padding:3px 0;">Tax</td>
+                  <td style="font-size:14px;color:#222;text-align:right;">${taxText}</td>
+                </tr>` : ""}
               </table>
               <div style="border-top:1px solid #e8e0d8;margin:6px 0 4px;"></div>
               ` : ""}
@@ -256,6 +279,8 @@ function buildCustomerText(order) {
   const { isEligible, subtotal, discountAmount } = calcDiscount(order.items);
   const subtotalText = formatMoney(Math.round(subtotal * 100), order.currency);
   const discountText = formatMoney(Math.round(discountAmount * 100), order.currency);
+  const amountTax = order.amountTax || 0;
+  const taxText = formatMoney(amountTax, order.currency);
 
   const notesSection = order.orderNotes
     ? `------------------------------------------------------------
@@ -282,7 +307,8 @@ Order Summary
 ${itemsText}
 ${isEligible ? `
 Subtotal:                    ${subtotalText}
-Discount (10% multi-wallet): −${discountText}
+Discount (10% multi-wallet): −${discountText}` : ""}${amountTax > 0 ? `
+Tax:                         ${taxText}` : ""}${isEligible || amountTax > 0 ? `
 ` : ""}
 Total Paid: ${totalPaid}
 
@@ -319,6 +345,8 @@ function buildOwnerHtml(order) {
   const { isEligible, subtotal, discountAmount } = calcDiscount(order.items);
   const subtotalText = formatMoney(Math.round(subtotal * 100), order.currency);
   const discountText = formatMoney(Math.round(discountAmount * 100), order.currency);
+  const amountTax = order.amountTax || 0;
+  const taxText = formatMoney(amountTax, order.currency);
 
   const notesSection = order.orderNotes
     ? `<!-- Customer Notes — highlighted -->
@@ -381,8 +409,9 @@ function buildOwnerHtml(order) {
             <td style="padding:28px 36px 0;">
               <p style="margin:0 0 12px;font-size:16px;font-weight:bold;border-bottom:2px solid #2c1a0e;padding-bottom:6px;color:#2c1a0e;">Order Items</p>
               ${itemsHtml}
-              ${isEligible ? `
+              ${isEligible || amountTax > 0 ? `
               <table style="border-collapse:collapse;width:100%;margin:12px 0 4px;">
+                ${isEligible ? `
                 <tr>
                   <td style="font-size:14px;color:#666;padding:3px 0;">Subtotal</td>
                   <td style="font-size:14px;color:#222;text-align:right;">${subtotalText}</td>
@@ -390,7 +419,12 @@ function buildOwnerHtml(order) {
                 <tr>
                   <td style="font-size:14px;color:#b47c3b;padding:3px 0;font-weight:bold;">Discount (10% multi-wallet)</td>
                   <td style="font-size:14px;color:#b47c3b;text-align:right;font-weight:bold;">−${discountText}</td>
-                </tr>
+                </tr>` : ""}
+                ${amountTax > 0 ? `
+                <tr>
+                  <td style="font-size:14px;color:#666;padding:3px 0;">Tax</td>
+                  <td style="font-size:14px;color:#222;text-align:right;">${taxText}</td>
+                </tr>` : ""}
               </table>
               <div style="border-top:1px solid #e8e0d8;margin:6px 0 4px;"></div>
               ` : ""}
@@ -443,6 +477,8 @@ function buildOwnerText(order) {
   const { isEligible, subtotal, discountAmount } = calcDiscount(order.items);
   const subtotalText = formatMoney(Math.round(subtotal * 100), order.currency);
   const discountText = formatMoney(Math.round(discountAmount * 100), order.currency);
+  const amountTax = order.amountTax || 0;
+  const taxText = formatMoney(amountTax, order.currency);
 
   const notesSection = order.orderNotes
     ? `============================================================
@@ -467,7 +503,8 @@ Order Items
 ${itemsText}
 ${isEligible ? `
 Subtotal:                    ${subtotalText}
-Discount (10% multi-wallet): −${discountText}
+Discount (10% multi-wallet): −${discountText}` : ""}${amountTax > 0 ? `
+Tax:                         ${taxText}` : ""}${isEligible || amountTax > 0 ? `
 ` : ""}
 Total Paid: ${totalPaid}
 

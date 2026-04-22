@@ -45,6 +45,7 @@ const OrderSchema = new mongoose.Schema(
     items: { type: [OrderItemSchema], default: [] },
 
     amountTotal: { type: Number, default: 0 }, // cents (Stripe session.amount_total)
+    amountTax:   { type: Number, default: 0 }, // cents (Stripe session.total_details.amount_tax)
     currency: { type: String, default: "USD" },
 
     customerEmail: { type: String, default: "" },
