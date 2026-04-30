@@ -18,6 +18,14 @@ function getTaxCode(item) {
   return TAX_CODES[item?.category] ?? TAX_CODES.wallet;
 }
 
+const ALLOWED_FONT_IDS = new Set([
+  "engagement",
+  "great-vibes",
+  "macondo-swash-caps",
+  "story-script",
+]);
+const MAX_PERSONALIZATION_LENGTH = 20;
+
 function normalizeItem(raw) {
   const price = Number(raw?.price);
   const quantity = Number(raw?.quantity);
@@ -39,6 +47,17 @@ function validateItem(item) {
   if (!item?.currency) return "Missing currency";
   if (!Number.isInteger(item?.quantity) || item.quantity < 1)
     return "Invalid quantity";
+
+  if (item.personalization) {
+    const trimmed = String(item.personalization.text || "").trim();
+    if (!trimmed) return "Personalization text cannot be empty";
+    if (trimmed.length > MAX_PERSONALIZATION_LENGTH)
+      return `Personalization text exceeds ${MAX_PERSONALIZATION_LENGTH} character limit`;
+    const fontId = item.personalization.fontId;
+    if (fontId && !ALLOWED_FONT_IDS.has(fontId))
+      return `Invalid personalization font: ${fontId}`;
+  }
+
   return null;
 }
 
@@ -83,7 +102,7 @@ router.post("/create-session", async (req, res) => {
             `Color: ${item.colorId}`,
             item.leatherId ? `Leather: ${item.leatherId}` : null,
             item.personalization?.text
-              ? `Personalization: ${item.personalization.text}`
+              ? `Personalization: "${item.personalization.text.trim()}" | Font: ${item.personalization.fontName || item.personalization.fontId || ""}`
               : null,
           ]
             .filter(Boolean)
@@ -98,8 +117,9 @@ router.post("/create-session", async (req, res) => {
       name: i.name,
       colorId: i.colorId,
       leatherId: i.leatherId || "",
-      pText: i.personalization?.text || "",
+      pText: i.personalization?.text?.trim() || "",
       pFont: i.personalization?.fontId || "",
+      pFontName: i.personalization?.fontName || "",
       qty: i.quantity,
       price: i.price,
       cur: i.currency,

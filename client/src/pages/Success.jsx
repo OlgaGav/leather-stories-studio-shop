@@ -5,6 +5,13 @@ import { useCart } from "../context/CartContext";
 import { calcDiscount } from "../utils/discount";
 import { getColorName, getLeatherName } from "../utils/catalog";
 
+const FONT_FAMILIES = {
+  "engagement": "'Engagement', cursive",
+  "great-vibes": "'Great Vibes', cursive",
+  "macondo-swash-caps": "'Macondo Swash Caps', cursive",
+  "story-script": "'Story Script', cursive",
+};
+
 const Success = () => {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get("session_id");
@@ -322,16 +329,31 @@ const Success = () => {
                     </div>
 
                     {item.personalizationText ? (
-                      <div className="mt-1 text-sm text-muted-foreground">
-                        Personalization:{" "}
-                        <span className="text-foreground">
-                          “{item.personalizationText}”
-                        </span>
-                        {item.personalizationFont ? (
-                          <span className="text-muted-foreground">
-                            {" "}
-                            ({item.personalizationFont})
+                      <div className="mt-2 space-y-0.5">
+                        <div className="text-sm text-muted-foreground">
+                          Personalization:{" "}
+                          <span className="text-foreground font-medium">
+                            "{item.personalizationText}"
                           </span>
+                        </div>
+                        {(item.personalizationFontName || item.personalizationFont) ? (
+                          <div className="text-sm text-muted-foreground">
+                            Font:{" "}
+                            <span className="text-foreground">
+                              {item.personalizationFontName || item.personalizationFont}
+                            </span>
+                          </div>
+                        ) : null}
+                        {FONT_FAMILIES[item.personalizationFont] ? (
+                          <p
+                            className="text-foreground leading-tight"
+                            style={{
+                              fontFamily: FONT_FAMILIES[item.personalizationFont],
+                              fontSize: "1.5rem",
+                            }}
+                          >
+                            {item.personalizationText}
+                          </p>
                         ) : null}
                       </div>
                     ) : null}

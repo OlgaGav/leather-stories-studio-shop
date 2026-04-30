@@ -9,6 +9,7 @@ const OrderItemSchema = new mongoose.Schema(
     leatherId: { type: String, default: "" },
     personalizationText: { type: String, default: "" },
     personalizationFont: { type: String, default: "" },
+    personalizationFontName: { type: String, default: "" },
     quantity: { type: Number, required: true, min: 1 },
     price: { type: Number, required: true }, // dollars
     currency: { type: String, default: "USD" },

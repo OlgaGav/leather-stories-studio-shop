@@ -2,11 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
 import { Play } from "lucide-react";
 import { useCart } from "../context/CartContext";
-import PersonalizationModal from "./PersonalizationModal";
+import PersonalizationFields from "./PersonalizationFields";
 import MediaLightbox from "./MediaLightbox";
 import { products } from "../data/products";
 import { findVariant, formatMoney } from "../utils/productVariant";
 import { features } from "../config/features";
+import { FONTS, getFontById } from "../data/fonts";
 
 // ---------------------------------------------------------------------------
 // Media gallery helpers
@@ -76,8 +77,8 @@ function ProductDetailsContent({ product }) {
   const [leatherId, setLeatherId] = useState(initialLeatherId);
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [personalization, setPersonalization] = useState(null);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [personalizationEnabled, setPersonalizationEnabled] = useState(false);
+  const [personalizationData, setPersonalizationData] = useState({ text: "", fontId: FONTS[0].id });
 
   const videoRef = useRef(null);
 
@@ -128,6 +129,18 @@ function ProductDetailsContent({ product }) {
       return;
     }
 
+    let personalization = null;
+    if (features.personalization && personalizationEnabled && personalizationData.text.trim()) {
+      const font = getFontById(personalizationData.fontId);
+      personalization = {
+        enabled: true,
+        text: personalizationData.text.trim(),
+        fontId: personalizationData.fontId,
+        fontName: font.name,
+        fontFamily: font.cssFamily,
+      };
+    }
+
     addToCart({
       productId: product.id,
       name: product.name,
@@ -135,7 +148,7 @@ function ProductDetailsContent({ product }) {
       currency: product.currency || "USD",
       colorId,
       leatherId: product.leathers?.length ? leatherId : "",
-      personalization: features.personalization ? personalization : null,
+      personalization,
       quantity: 1,
       imageUrl: variant?.images?.[0] || product.defaultImages?.[0] || null,
     });
@@ -323,22 +336,39 @@ function ProductDetailsContent({ product }) {
             </div>
           )}
 
+          {features.personalization && (
+            <div className="mt-8 rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={personalizationEnabled}
+                  onChange={(e) => {
+                    setPersonalizationEnabled(e.target.checked);
+                    if (!e.target.checked) setPersonalizationData({ text: "", fontId: FONTS[0].id });
+                  }}
+                  className="h-4 w-4 accent-[#b26a2a]"
+                />
+                <span className="text-sm font-medium text-neutral-800">Add personalization</span>
+              </label>
+
+              {personalizationEnabled && (
+                <div className="mt-4">
+                  <PersonalizationFields
+                    value={personalizationData}
+                    onChange={setPersonalizationData}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
           <button
-            className="mt-8 w-full rounded-md bg-[#8b4a1f] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#7a401b]"
+            className="mt-4 w-full rounded-md bg-[#8b4a1f] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#7a401b]"
             onClick={orderNow}
           >
             Add to Cart —{" "}
             {formatMoney(product.price, product.currency || "USD")}
           </button>
-
-          {features.personalization && (
-            <button
-              className="mt-3 text-sm uppercase tracking-widest text-[#b26a2a] hover:opacity-80"
-              onClick={() => setModalOpen(true)}
-            >
-              + Add personalization
-            </button>
-          )}
         </div>
       </div>
 
@@ -401,16 +431,6 @@ function ProductDetailsContent({ product }) {
 
         <p className="mt-6 text-neutral-700">{product.details?.giftReady}</p>
       </div>
-
-      {features.personalization && (
-        <PersonalizationModal
-          open={modalOpen}
-          onClose={() => setModalOpen(false)}
-          onSave={setPersonalization}
-          product={product}
-          initialValue={personalization}
-        />
-      )}
 
       {lightboxOpen && (
         <MediaLightbox

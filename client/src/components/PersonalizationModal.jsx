@@ -1,55 +1,39 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { FONTS, getFontById } from "../data/fonts";
+import FontSelector from "./FontSelector";
 
-export default function PersonalizationModal({
-  open,
-  onClose,
-  onSave,
-  product,
-  initialValue,
-}) {
-  const fonts = product.fonts || [
-    { id: "serif", name: "Serif" },
-    { id: "sans", name: "Sans" },
-  ];
+const MAX_LEN = 20;
 
-  const maxLen = product.maxPersonalizationLength ?? 20;
-
-  const [fontId, setFontId] = useState(initialValue?.fontId || fonts[0]?.id);
+export default function PersonalizationModal({ open, onClose, onSave, initialValue }) {
   const [text, setText] = useState(initialValue?.text || "");
+  const [fontId, setFontId] = useState(initialValue?.fontId || FONTS[0].id);
 
   useEffect(() => {
     if (open) {
-      setFontId(initialValue?.fontId || fonts[0]?.id);
       setText(initialValue?.text || "");
+      setFontId(initialValue?.fontId || FONTS[0].id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  const fontPreviewClass = useMemo(() => {
-    // TODO: Just a simple preview mapping; will be replaced later with real brand fonts
-    if (fontId === "serif") return "font-serif";
-    if (fontId === "script") return "font-serif italic";
-    return "font-sans";
-  }, [fontId]);
+  const selectedFont = getFontById(fontId);
 
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* overlay */}
       <button
         className="absolute inset-0 bg-black/40"
         aria-label="Close modal"
         onClick={onClose}
       />
 
-      {/* modal */}
-      <div className="relative w-[92%] max-w-lg rounded-2xl bg-white p-6 shadow-xl">
-        <div className="flex items-start justify-between gap-4">
+      <div className="relative w-[92%] max-w-lg rounded-2xl bg-white p-6 shadow-xl overflow-y-auto max-h-[90vh]">
+        <div className="flex items-start justify-between gap-4 mb-5">
           <div>
             <h3 className="text-lg font-semibold">Add personalization</h3>
-            <p className="mt-1 text-sm text-neutral-600">
-              Enter text (Cyrillic supported). Max {maxLen} characters.
+            <p className="mt-1 text-sm text-neutral-500">
+              Up to {MAX_LEN} characters. Latin + Cyrillic supported.
             </p>
           </div>
           <button
@@ -60,41 +44,47 @@ export default function PersonalizationModal({
           </button>
         </div>
 
-        <div className="mt-5 grid gap-4">
+        <div className="space-y-5">
           <div>
-            <label className="text-xs font-medium text-neutral-700">Font</label>
-            <select
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-              value={fontId}
-              onChange={(e) => setFontId(e.target.value)}
-            >
-              {fonts.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="text-xs font-medium text-neutral-700">Text</label>
+            <label className="block text-xs font-medium uppercase tracking-widest text-neutral-500 mb-1">
+              Personalization text
+            </label>
             <input
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+              className="w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm focus:border-[#b26a2a] focus:outline-none transition"
               value={text}
-              onChange={(e) => setText(e.target.value.slice(0, maxLen))}
-              placeholder="e.g., John"
+              maxLength={MAX_LEN}
+              placeholder="e.g. Good Luck"
+              onChange={(e) => setText(e.target.value.slice(0, MAX_LEN))}
+              autoFocus
             />
-            <div className="mt-1 text-xs text-neutral-500">
-              {text.length}/{maxLen}
-            </div>
+            <p className="mt-1 text-xs text-neutral-400">{text.length}/{MAX_LEN}</p>
           </div>
 
-          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
-            <div className="text-xs font-medium text-neutral-600">Preview</div>
-            <div className={`mt-2 text-2xl ${fontPreviewClass}`}>
-              {text || "—"}
-            </div>
+          <div>
+            <label className="block text-xs font-medium uppercase tracking-widest text-neutral-500 mb-2">
+              Choose font
+            </label>
+            <FontSelector
+              fonts={FONTS}
+              value={fontId}
+              onChange={setFontId}
+              previewText={text || "Abc"}
+            />
           </div>
+
+          {text && (
+            <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+              <div className="text-xs font-medium uppercase tracking-widest text-neutral-400 mb-2">
+                Preview
+              </div>
+              <p
+                style={{ fontFamily: selectedFont.cssFamily, fontSize: "1.75rem", lineHeight: 1.3 }}
+                className="text-neutral-800"
+              >
+                {text}
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="mt-6 flex justify-end gap-2">
@@ -104,12 +94,17 @@ export default function PersonalizationModal({
           >
             Cancel
           </button>
-
           <button
             className="rounded-md bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-800 disabled:opacity-50"
             disabled={!text.trim()}
             onClick={() => {
-              onSave({ text: text.trim(), fontId });
+              onSave({
+                enabled: true,
+                text: text.trim(),
+                fontId,
+                fontName: selectedFont.name,
+                fontFamily: selectedFont.cssFamily,
+              });
               onClose();
             }}
           >
