@@ -1,5 +1,14 @@
 import nodemailer from "nodemailer";
 
+const FONT_CSS_MAP = {
+  "engagement": "'Engagement', cursive",
+  "great-vibes": "'Great Vibes', cursive",
+  "macondo-swash-caps": "'Macondo Swash Caps', cursive",
+  "story-script": "'Story Script', cursive",
+};
+
+const GOOGLE_FONTS_LINK = `<link href="https://fonts.googleapis.com/css2?family=Engagement&family=Great+Vibes&family=Macondo+Swash+Caps&family=Story+Script&display=swap" rel="stylesheet">`;
+
 const transporter = nodemailer.createTransport({
   host: 'smtp.hostinger.com',
   port: 465,
@@ -88,7 +97,7 @@ function buildItemsText(items = []) {
         `   Color: ${formatLabel(item.colorId)}`,
         item.leatherId ? `   Leather: ${formatLabel(item.leatherId)}` : null,
         item.personalizationText
-          ? `   Personalization: ${item.personalizationText}${item.personalizationFont ? ` (${formatLabel(item.personalizationFont)})` : ""}`
+          ? `   Personalization: "${item.personalizationText}" — Font: ${item.personalizationFontName || formatLabel(item.personalizationFont)}`
           : null,
         `   Quantity: ${item.quantity}`,
         `   Price: ${formatMoney(item.price * 100, item.currency)} each`,
@@ -96,6 +105,36 @@ function buildItemsText(items = []) {
       ].filter(Boolean).join("\n");
     })
     .join("\n\n");
+}
+
+function buildPersonalizationHtml(item) {
+  const fontName = item.personalizationFontName || formatLabel(item.personalizationFont);
+  const fontFamily = FONT_CSS_MAP[item.personalizationFont] || "serif";
+  return `"${item.personalizationText}" — ${fontName}<div style="font-family:${fontFamily};font-size:22px;color:#2c1a0e;margin-top:4px;line-height:1.3;">${item.personalizationText}</div>`;
+}
+
+function buildPersonalizationAlertHtml(items) {
+  const personalized = items.filter((i) => i.personalizationText);
+  if (!personalized.length) return "";
+  const rows = personalized.map((item) => {
+    const fontName = item.personalizationFontName || formatLabel(item.personalizationFont);
+    const fontFamily = FONT_CSS_MAP[item.personalizationFont] || "serif";
+    return `<div style="margin-bottom:10px;">
+      <strong>${item.name || formatLabel(item.productId)}</strong><br>
+      Text: <strong>${item.personalizationText}</strong> &mdash; Font: ${fontName}
+      <div style="font-family:${fontFamily};font-size:28px;color:#2c1a0e;margin-top:4px;line-height:1.3;">${item.personalizationText}</div>
+    </div>`;
+  }).join("");
+  return `<tr>
+    <td style="padding:0 36px 28px;">
+      <div style="border:2px solid #b45309;border-radius:6px;padding:16px 20px;background:#fffbeb;">
+        <p style="margin:0 0 12px;font-size:16px;font-weight:bold;color:#b45309;">
+          &#9888; IMPORTANT: Personalization requested
+        </p>
+        ${rows}
+      </div>
+    </td>
+  </tr>`;
 }
 
 function buildItemsHtml(items = []) {
@@ -106,7 +145,7 @@ function buildItemsHtml(items = []) {
         ["Color", formatLabel(item.colorId)],
         item.leatherId ? ["Leather", formatLabel(item.leatherId)] : null,
         item.personalizationText
-          ? ["Personalization", `${item.personalizationText}${item.personalizationFont ? ` (${formatLabel(item.personalizationFont)})` : ""}`]
+          ? ["Personalization", buildPersonalizationHtml(item)]
           : null,
         ["Quantity", item.quantity],
         ["Price", `${formatMoney(item.price * 100, item.currency)} each`],
@@ -158,6 +197,7 @@ function buildCustomerHtml(order) {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Order Confirmation</title>
+  ${GOOGLE_FONTS_LINK}
 </head>
 <body style="margin:0;padding:0;background:#faf8f5;font-family:Georgia,serif;color:#222;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#faf8f5;padding:32px 0;">
@@ -341,6 +381,7 @@ function buildOwnerHtml(order) {
   const totalPaid = formatMoney(order.amountTotal, order.currency);
   const itemsHtml = buildItemsHtml(order.items);
   const shippingHtml = buildShippingHtml(order.shippingAddress);
+  const personalizationAlertHtml = buildPersonalizationAlertHtml(order.items || []);
   const { isEligible, subtotal, discountAmount } = calcDiscount(order.items);
   const subtotalText = formatMoney(Math.round(subtotal * 100), order.currency);
   const discountText = formatMoney(Math.round(discountAmount * 100), order.currency);
@@ -367,6 +408,7 @@ function buildOwnerHtml(order) {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>New Order</title>
+  ${GOOGLE_FONTS_LINK}
 </head>
 <body style="margin:0;padding:0;background:#f5f0ea;font-family:Arial,sans-serif;color:#222;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0ea;padding:32px 0;">
@@ -402,6 +444,8 @@ function buildOwnerHtml(order) {
           </tr>
 
           ${notesSection}
+
+          ${personalizationAlertHtml}
 
           <!-- Order Items -->
           <tr>
@@ -479,6 +523,22 @@ function buildOwnerText(order) {
   const amountTax = order.amountTax || 0;
   const taxText = formatMoney(amountTax, order.currency);
 
+  const personalized = (order.items || []).filter((i) => i.personalizationText);
+  const personalizationSection = personalized.length
+    ? `============================================================
+!! PERSONALIZATION REQUIRED !!
+============================================================
+
+${personalized.map((item) => {
+  const fontName = item.personalizationFontName || formatLabel(item.personalizationFont);
+  return `  Product: ${item.name || formatLabel(item.productId)}
+  Text:    "${item.personalizationText}"
+  Font:    ${fontName}`;
+}).join("\n\n")}
+
+`
+    : "";
+
   const notesSection = order.orderNotes
     ? `============================================================
 !! CUSTOMER ORDER NOTES !!
@@ -495,7 +555,7 @@ ${order.orderNotes}
 Customer Email: ${order.customerEmail}
 Total: ${totalPaid}${isEligible ? ` (incl. 10% multi-wallet discount of −${discountText})` : ""}
 
-${notesSection}------------------------------------------------------------
+${personalizationSection}${notesSection}------------------------------------------------------------
 Order Items
 ------------------------------------------------------------
 
@@ -522,6 +582,248 @@ Stripe Session: ${order.stripeSessionId}
 `;
 }
 
+// ── Payment issue email (owner-only warning) ──────────────────────────────────
+
+function buildPaymentIssueText(details) {
+  const {
+    eventType,
+    paymentStatus,
+    paymentIntentId,
+    stripeSessionId,
+    customerEmail,
+    customerName,
+    orderRef,
+    items = [],
+    amountTotal,
+    currency,
+    shippingAddress,
+    orderNotes,
+    errorReason,
+    timestamp,
+    environment,
+  } = details;
+
+  const totalText = amountTotal ? formatMoney(amountTotal, currency) : "Unknown";
+  const itemsText = items.length ? buildItemsText(items) : "  No item details available";
+  const shippingText = buildShippingText(shippingAddress);
+
+  const notesSection = orderNotes
+    ? `------------------------------------------------------------
+Customer Order Notes
+------------------------------------------------------------
+
+${orderNotes}
+
+`
+    : "";
+
+  const errorSection = errorReason
+    ? `------------------------------------------------------------
+Error / Failure Reason
+------------------------------------------------------------
+
+${errorReason}
+
+`
+    : "";
+
+  return `⚠️ PAYMENT ISSUE — MANUAL STRIPE CHECK REQUIRED
+Leather Stories Studio
+============================================================
+
+Warning: There were issues with this payment.
+Please check the payment status in Stripe before processing this order.
+
+------------------------------------------------------------
+Payment Details
+------------------------------------------------------------
+
+Customer Email:        ${customerEmail || "Not available"}
+Customer Name:         ${customerName || "Not available"}
+
+Stripe Session ID:     ${stripeSessionId || "Not available"}
+Payment Intent ID:     ${paymentIntentId || "Not available"}
+Stripe Event Type:     ${eventType}
+Payment Status:        ${paymentStatus || "Unknown"}
+Order Reference:       ${orderRef || "Not available"}
+Order Total:           ${totalText} ${currency || ""}
+Environment:           ${environment}
+Timestamp:             ${timestamp.toISOString()}
+
+------------------------------------------------------------
+Order Items
+------------------------------------------------------------
+
+${itemsText}
+
+------------------------------------------------------------
+Shipping Address
+------------------------------------------------------------
+
+${shippingText}
+
+${notesSection}${errorSection}------------------------------------------------------------
+Action Required
+------------------------------------------------------------
+
+Open the Stripe Dashboard and verify the payment/session status
+before contacting the customer or processing the order.
+`;
+}
+
+function buildPaymentIssueHtml(details) {
+  const {
+    eventType,
+    paymentStatus,
+    paymentIntentId,
+    stripeSessionId,
+    customerEmail,
+    customerName,
+    orderRef,
+    items = [],
+    amountTotal,
+    currency,
+    shippingAddress,
+    orderNotes,
+    errorReason,
+    timestamp,
+    environment,
+  } = details;
+
+  const totalText = amountTotal ? formatMoney(amountTotal, currency) : "Unknown";
+  const itemsHtml = items.length
+    ? buildItemsHtml(items)
+    : "<p style='color:#666;font-size:14px;margin:0;'>No item details available</p>";
+  const shippingHtml = buildShippingHtml(shippingAddress);
+
+  const infoRows = [
+    ["Customer Email", customerEmail || "Not available"],
+    ["Customer Name", customerName || "Not available"],
+    ["Stripe Session ID", stripeSessionId || "Not available"],
+    ["Payment Intent ID", paymentIntentId || "Not available"],
+    ["Stripe Event Type", eventType],
+    ["Payment Status", paymentStatus || "Unknown"],
+    ["Order Reference", orderRef || "Not available"],
+    ["Order Total", `${totalText} ${currency || ""}`],
+    ["Environment", environment],
+    ["Timestamp", timestamp.toISOString()],
+  ];
+
+  const infoHtml = infoRows
+    .map(
+      ([label, value]) =>
+        `<tr>
+          <td style="font-size:13px;color:#666;padding-right:16px;padding-bottom:6px;white-space:nowrap;vertical-align:top;">${label}</td>
+          <td style="font-size:14px;color:#222;padding-bottom:6px;font-family:monospace;">${value}</td>
+        </tr>`
+    )
+    .join("");
+
+  const notesSection = orderNotes
+    ? `<tr>
+        <td style="padding:0 36px 24px;">
+          <p style="margin:0 0 8px;font-size:15px;font-weight:bold;color:#7f1d1d;">Customer Order Notes</p>
+          <div style="background:#fff8f8;border-left:3px solid #f87171;padding:12px 16px;font-size:14px;line-height:1.7;color:#444;border-radius:0 4px 4px 0;">
+            ${orderNotes}
+          </div>
+        </td>
+      </tr>`
+    : "";
+
+  const errorSection = errorReason
+    ? `<tr>
+        <td style="padding:0 36px 24px;">
+          <p style="margin:0 0 8px;font-size:15px;font-weight:bold;color:#7f1d1d;">Error / Failure Reason</p>
+          <div style="background:#fee2e2;border:1px solid #fca5a5;padding:12px 16px;font-size:14px;color:#7f1d1d;border-radius:4px;font-family:monospace;word-break:break-all;">
+            ${errorReason}
+          </div>
+        </td>
+      </tr>`
+    : "";
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payment Issue</title>
+</head>
+<body style="margin:0;padding:0;background:#faf0f0;font-family:Arial,sans-serif;color:#222;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#faf0f0;padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table width="620" cellpadding="0" cellspacing="0" style="max-width:620px;width:100%;background:#ffffff;border:2px solid #f87171;border-radius:4px;overflow:hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:#7f1d1d;padding:24px 36px;">
+              <p style="margin:0;font-size:20px;color:#fef2f2;font-family:Georgia,serif;letter-spacing:0.04em;">&#9888; Payment Issue</p>
+              <p style="margin:4px 0 0;font-size:12px;color:#fca5a5;letter-spacing:0.1em;">LEATHER STORIES STUDIO &mdash; MANUAL CHECK REQUIRED</p>
+            </td>
+          </tr>
+
+          <!-- Warning Banner -->
+          <tr>
+            <td style="background:#fee2e2;border-bottom:2px solid #f87171;padding:16px 36px;">
+              <p style="margin:0;font-size:15px;font-weight:bold;color:#7f1d1d;">Warning: There were issues with this payment.</p>
+              <p style="margin:6px 0 0;font-size:14px;color:#991b1b;">Please check the payment status in Stripe before processing this order.</p>
+            </td>
+          </tr>
+
+          <!-- Payment Details -->
+          <tr>
+            <td style="padding:24px 36px 12px;">
+              <p style="margin:0 0 12px;font-size:15px;font-weight:bold;color:#7f1d1d;border-bottom:1px solid #fca5a5;padding-bottom:6px;">Payment Details</p>
+              <table style="border-collapse:collapse;">
+                ${infoHtml}
+              </table>
+            </td>
+          </tr>
+
+          <!-- Order Items -->
+          <tr>
+            <td style="padding:0 36px 24px;">
+              <p style="margin:0 0 12px;font-size:15px;font-weight:bold;color:#7f1d1d;border-bottom:1px solid #fca5a5;padding-bottom:6px;">Order Items</p>
+              ${itemsHtml}
+            </td>
+          </tr>
+
+          <!-- Shipping Address -->
+          <tr>
+            <td style="padding:0 36px 24px;">
+              <p style="margin:0 0 10px;font-size:15px;font-weight:bold;color:#7f1d1d;">Shipping Address</p>
+              <div style="font-size:14px;line-height:1.8;color:#333;">${shippingHtml}</div>
+            </td>
+          </tr>
+
+          ${notesSection}
+          ${errorSection}
+
+          <!-- Action Required -->
+          <tr>
+            <td style="background:#fff3cd;border-top:2px solid #fbbf24;padding:16px 36px;">
+              <p style="margin:0;font-size:14px;font-weight:bold;color:#92400e;">&#128270; Action Required</p>
+              <p style="margin:6px 0 0;font-size:14px;color:#78350f;line-height:1.6;">
+                Open the Stripe Dashboard and verify the payment/session status before contacting the customer or processing the order.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#f5f0ea;padding:16px 36px;text-align:center;border-top:1px solid #e8e0d8;">
+              <p style="margin:0;font-size:12px;color:#888;">Leather Stories Studio &mdash; automated payment issue alert</p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
 // ── Sender ────────────────────────────────────────────────────────────────────
 
 const sendEmail = async (order) => {
@@ -541,6 +843,16 @@ const sendEmail = async (order) => {
     subject: `New Order — ${formatMoney(order.amountTotal, order.currency)} (${order.orderRef || order.stripeSessionId})`,
     text: buildOwnerText(order),
     html: buildOwnerHtml(order),
+  });
+};
+
+export const sendPaymentIssueEmail = async (details) => {
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: process.env.OWNER_EMAIL,
+    subject: "⚠️ Payment Issue — Manual Stripe Check Required",
+    text: buildPaymentIssueText(details),
+    html: buildPaymentIssueHtml(details),
   });
 };
 

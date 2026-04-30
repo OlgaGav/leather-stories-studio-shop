@@ -212,9 +212,44 @@ export default function ProductCard({ product, onOrderNow }) {
           </Link>
         </div>
 
+        {/* Personalization row */}
+        {features.personalization && (
+          <div className="mt-8">
+            {personalization?.text ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3 flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-widest text-amber-700 mb-0.5">
+                    Personalization
+                  </p>
+                  <p
+                    className="text-neutral-800 leading-tight"
+                    style={{ fontFamily: personalization.fontFamily, fontSize: "1.25rem" }}
+                  >
+                    {personalization.text}
+                  </p>
+                  <p className="text-xs text-amber-600 mt-0.5">{personalization.fontName}</p>
+                </div>
+                <button
+                  className="text-xs text-amber-700 underline underline-offset-2 hover:text-amber-900 shrink-0"
+                  onClick={() => setModalOpen(true)}
+                >
+                  Edit
+                </button>
+              </div>
+            ) : (
+              <button
+                className="w-full rounded-xl border border-dashed border-neutral-300 py-2.5 text-sm text-[#b26a2a] hover:border-[#b26a2a] hover:bg-amber-50/40 transition"
+                onClick={() => setModalOpen(true)}
+              >
+                + Add personalization
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Order now */}
         <button
-          className="mt-8 w-full rounded-md bg-[#8b4a1f] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#7a401b]"
+          className="mt-4 w-full rounded-md bg-[#8b4a1f] px-5 py-3 text-sm font-medium text-white transition hover:bg-[#7a401b]"
           onClick={() => {
             if (!colorId) {
               alert("Please select a color");
@@ -248,7 +283,6 @@ export default function ProductCard({ product, onOrderNow }) {
             open={modalOpen}
             onClose={() => setModalOpen(false)}
             onSave={setPersonalization}
-            product={product}
             initialValue={personalization}
           />
         )}

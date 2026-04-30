@@ -300,16 +300,31 @@ export default function Cart() {
                           ) : null}
 
                           {item.personalization?.text ? (
-                            <div>
-                              Personalization:{" "}
-                              <span className="text-foreground">
-                                “{item.personalization.text}”
-                              </span>
-                              {item.personalization.fontId ? (
-                                <span className="text-muted-foreground">
-                                  {" "}
-                                  ({item.personalization.fontId})
+                            <div className="mt-1 space-y-0.5">
+                              <div>
+                                Personalization:{" "}
+                                <span className="text-foreground font-medium">
+                                  "{item.personalization.text}"
                                 </span>
+                              </div>
+                              {(item.personalization.fontName || item.personalization.fontId) ? (
+                                <div>
+                                  Font:{" "}
+                                  <span className="text-foreground">
+                                    {item.personalization.fontName || item.personalization.fontId}
+                                  </span>
+                                </div>
+                              ) : null}
+                              {item.personalization.fontFamily ? (
+                                <p
+                                  className="text-foreground leading-tight"
+                                  style={{
+                                    fontFamily: item.personalization.fontFamily,
+                                    fontSize: "1.25rem",
+                                  }}
+                                >
+                                  {item.personalization.text}
+                                </p>
                               ) : null}
                             </div>
                           ) : null}

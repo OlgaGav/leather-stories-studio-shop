@@ -1,3 +1,3 @@
 export const features = {
-  personalization: false,
+  personalization: import.meta.env.VITE_ENABLE_PERSONALIZATION === "true",
 };
