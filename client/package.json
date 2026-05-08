@@ -19,15 +19,23 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
+    "@babel/core": "^7.29.0",
+    "@babel/preset-env": "^7.29.5",
+    "@babel/preset-react": "^7.28.5",
     "@eslint/js": "^9.39.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
     "autoprefixer": "^10.4.27",
+    "babel-jest": "^30.4.1",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "jest": "^30.4.1",
+    "jest-environment-jsdom": "^30.4.1",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.19",
     "vite": "^7.3.1"
